@@ -79,55 +79,35 @@ to-nix-path() {
 }
 export -f to-nix-path
 
-# verified to work 10/19/18
-# todo: make linux port
+# verified to work 12/30/18
 # makes symbolic links (NOTE: developer mode must be on!)
 # NOTE: symbolic links appear to be the best kind there is
 mkln() {
     if (( $# != 2 )); then
 		echo "usage: > mkln target link_name"
 		echo "note: dot (.) for link_name means preserve target_name as link_name"
-        echo "also relative targets are interpreted from link destination dir"
+		echo "note: non-local link_name's aren't allowed"
         return 1
     fi
 	
-    # link_name is link_path
-	# link_prefix must be absolute
-    link_prefix=$(dirname "$2")
-    link_prefix=$(realpath "$link_prefix")
-    link_name="$link_prefix"/$(basename "$2")
-    
-    if ! [ -e "$link_prefix" ]; then
-        echo "link destination directory: \"$link_prefix\" does not exist"
+    link_name="$2"
+    link_base=$(basename "$link_name")
+    if ! [ "$link_base" == "$link_name" ]; then
+        echo "non-local link_names aren't supported, please cd to that directory first instead"
         return 1
     fi
-    
-    # we use -q (quite) flag because target doesn't necessarily exist 'as-is'
-    # relative to cwd and this makes realpath print an error to screen
-    abs_target=$(realpath -q --no-symlinks "$1")
-    if [ "$abs_target" = "$1" ]; then # if target is absolute already
-        target_from_here="$1" # then do nothing
-    else
-        target_from_here="$link_prefix/$1" # else make it absolute
-    fi
-	
-	# target_from_here=target relative to cwd (b4: it was relative to link destination)
     
     mklink_args=""
-	if [ -d "$target_from_here" ]; then # if target is a directory
+	if [ -d "$1" ]; then # if target is a directory
         mklink_args="/D"
-    elif ! [ -e "$target_from_here" ]; then
-        echo "target: \"$target_from_here\" doesn't exist..."
-		echo "remember: relative targets are interpreted from link destination dir"
+    elif ! [ -e "$1" ]; then
+        echo "target: \"$1\" doesn't exist..."
         return 1
     fi
 
-	# dot means preserve target name as link name
-    # NOTE: $(cmd) returns are automatically "quoted" for assignment,
-	# apparently not in if statements tho so workaround below:
-    link_base=$(basename "$link_name")
-	if [ "$link_base" = "." ]; then
-		link_name="$link_prefix"/$(basename "$1")
+	# dot (.) means preserve target name as link name
+	if [ "$link_name" == "." ]; then
+		link_name=$(basename "$1")
 	fi
     
 	target=$(to-win-path "$1")
