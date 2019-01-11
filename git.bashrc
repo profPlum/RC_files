@@ -11,7 +11,7 @@ export PATH="$HOME/Non-Syncing-Files/bin:$PATH"
 #conda activate
 
 ######################## ADDED FOR GW-ANALYSIS-DNN ########################
-export GW_DNN_INSTALL_PATH="/c/Users/dwyer/Desktop/Work/GW_Project/gw-analysis-dnn"
+export GW_DNN_INSTALL_PATH="/c/Users/dwyer/Non-Syncing-Files/Work/gw-analysis-dnn"
 export GW_DNN_INSTALLED="TRUE"
 
 # add scripts to path
@@ -22,6 +22,7 @@ export PATH="$GW_DNN_INSTALL_PATH/scripts/bash_utils:$PATH"
 alias gw="cd $GW_DNN_INSTALL_PATH/scripts"
 alias td="cd $GW_DNN_INSTALL_PATH/training_data"
 alias cfg="cd $GW_DNN_INSTALL_PATH/configs"
+alias timer="cd ~/Work/Java/'ActivityFocusTimer'"
 
 export UMD_IP="134.88.5.42"
 alias mit_cloud="ssh ddeighan@txe1-login.mit.edu"
@@ -61,17 +62,14 @@ export -f to-win-path
 to-nix-path() {
     if (( $# == 1 )) && [ "$1" != '-h' ]; then
 	    ARG1="$1"
+    elif [ "$1" = '-nc' ]; then
+        ARG1="$2"
         if [ "${ARG1:0:2}" = "C:" ]; then
             ARG1="/c${ARG1:2}" # start with linux-style C drive
         fi
-    elif [ "$1" = '-wc' ]; then
-        # we will preserve the windows style C drive
-        # useful for dumping paths to programming strings
-        ARG1=$2
     else
-        echo "usage: > to-nix-path [-wc] 'win_path' (must be quoted)"
-        echo "note: --wc converts slashes to unix style but"
-        echo "maintains the 'C:' (if present), use this when coding"
+        echo "usage: > to-nix-path [-nc] 'win_path' (must be quoted)"
+        echo "note: -nc converts the 'C:' to unix style as well..."
         return 1
     fi
 

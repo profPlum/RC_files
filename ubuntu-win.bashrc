@@ -110,32 +110,25 @@ export PATH="$GW_DNN_INSTALL_PATH/scripts:$PATH"
 export PATH="$GW_DNN_INSTALL_PATH/scripts/bash_utils:$PATH"
 
 # easy cd's that are made frequently
-alias gw="cd $GW_DNN_INSTALL_PATH/scripts"
-alias td="cd $GW_DNN_INSTALL_PATH/training_data"
-alias cfg="cd $GW_DNN_INSTALL_PATH/configs"
+#alias gw="cd $GW_DNN_INSTALL_PATH/scripts"
+#alias td="cd $GW_DNN_INSTALL_PATH/training_data"
+#alias cfg="cd $GW_DNN_INSTALL_PATH/configs"
 alias cbcex="cd $GW_DNN_INSTALL_PATH/pycbc_data/example1"
 alias p2="source activate python27-lal-new"
 
 # doesn't work with virtual environments
 # (do we really need these paths?)
 # needed(?) for cudnn
-export PATH="$HOME/anaconda3/bin:$PATH" # appears to be necessary for source activate ...
-export PATH="$HOME/anaconda3:$PATH" # needed for windows anaconda
-export CPATH="$HOME/anaconda3/include:$CPATH"
-export LIBRARY_PATH="$HOME/anaconda3/lib$LIBRARY_PATH"
-export LD_LIBRARY_PATH="$HOME/anaconda3/lib:$LD_LIBRARY_PATH"
-
-# uncomment if you want to modify gwsurrogate or gwtools
-#export PYTHONPATH="$HOME/gwtools/gwtools:$PYTHONPATH"
-#export PYTHONPATH="$HOME/gwsurrogate/gwsurrogate:$PYTHONPATH"
-#export PYTHONPATH="$HOME/gwsurrogate:$PYTHONPATH"
+# export PATH="$HOME/anaconda3/bin:$PATH" # appears to be necessary for source activate ...
+# export PATH="$HOME/anaconda3:$PATH" # needed for windows anaconda
+# export CPATH="$HOME/anaconda3/include:$CPATH"
+# export LIBRARY_PATH="$HOME/anaconda3/lib$LIBRARY_PATH"
+# export LD_LIBRARY_PATH="$HOME/anaconda3/lib:$LD_LIBRARY_PATH"
 ###########################################################################
-
 
 export PATH="$HOME/bin:$PATH"
 
 export NIX_ROOT_IN_WINDOWS='C:/Users/dwyer/AppData/Local/Packages/CanonicalGroupLimited.Ubuntu18.04onWindows_79rhkp1fndgsc/LocalState/rootfs'
-
 
 # converts a linux path to the corresponding path in the global windows file system
 to-win-path() {
@@ -159,5 +152,3 @@ to-win-path() {
 export -f to-win-path
 
 alias explorer_here='explorer.exe $(to-win-path)'
-. /mnt/c/Users/dwyer/anaconda3-linux/etc/profile.d/conda.sh
-conda activate

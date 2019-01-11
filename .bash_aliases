@@ -1,5 +1,5 @@
 #!/bin/bash
-# IMPORTANT: if this is giving you weird errors remove all '\r' and '\t' characters 
+# IMPORTANT: if this is giving you weird errors remove all '\r' and '\t' characters
  
 ##### contains aliases, functions and optionally ##### 
  
