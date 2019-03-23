@@ -6,25 +6,52 @@
 ##### path additions needed for all .bashrc files ##### 
 # to use do mv .bash_aliases.txt .bash_aliases; then 
 # if not present add this to your .bashrc file: 
-# if [ -f ~/.bash_aliases ]; then 
+# if [ -f ~/.bash_aliases ]; then
     # . ~/.bash_aliases
 # fi
  
 # super fast shortcuts for gw-analysis-dnn
-alias gw="cd $GW_DNN_INSTALL_PATH/scripts"
-alias td="cd $GW_DNN_INSTALL_PATH/training_data"
-alias cfg="cd $GW_DNN_INSTALL_PATH/configs"
+alias gw='cd $GW_DNN_INSTALL_PATH/scripts'
+alias td='cd $GW_DNN_INSTALL_PATH/training_data'
+alias cfg='cd $GW_DNN_INSTALL_PATH/configs'
+
+# TODO: put inside a .bash_profile (this is where all environment
+# initialization is supposed to happen)
+export USER_EMAIL=ddeighan@umassd.edu
+export PATH="$HOME/bin:$PATH"
  
-####### general purpose aliases/functions: ####### 
+####### general purpose aliases: ####### 
  
 alias fcon='grep -n ">>"' # find git conflicts
 alias mytop='top -u $USER'
-alias ca='source activate' # conda activate
-alias cda='source deactivate; source deactivate' # conda deactivate, needs this twice or undefined behaviour 11/7/18
-alias gch='git checkout HEAD -- ' # discard file changes
+alias gch='git checkout HEAD --' # discard file changes
 alias git-frb="git fetch; git rebase" # when local branch is stale
 alias sr='screen -r' # simple alternative to full function
 alias fdif='git diff --no-index' # file diff (unrelated to git repos)
+alias cp='cp -r'
+alias scp='scp -r'
+alias ls='ls -s' # symbolic links are best
+
+################# anaconda: ##################### 
+
+alias ca='conda activate' # conda activate
+alias cda='conda deactivate' # conda deactivate, needs this twice or undefined behaviour 11/7/18
+alias cie='conda env create -f' # conda import env
+alias cee='conda env export' # conda export env
+
+################# Ubuntu: #######################
+
+# for gnome desktop shortcuts
+# IMPORTANT: the app command doesn't have access to env variables or ~
+# workaround if these are necessary is to do bash -c "BASH_CMD"
+alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
+
+# this makes ctrl+arrow skip over words...
+# doesn't go in inputrc for some reason: https://askubuntu.com/questions/162247/why-does-ctrl-left-arrow-not-skip-words/288530
+bind '"\e[1;5D" backward-word'
+bind '"\e[1;5C" forward-word'
+
+########## General Purpose Functions: ##########
 
 zd() { # zip dir
     zip -r "$1".zip "$1"
@@ -41,6 +68,13 @@ hdif() {
     git diff HEAD -- $ARG1
 }
 export -f hdif 
+
+# git push new branch (for pushing new branches to origin)
+git-pnb() {
+    branch_name=$(git branch | grep \* | cut -d ' ' -f2)
+    git push --set-upstream origin $branch_name
+}
+export -f git-pnb
 
 # verified to work on 10/19/18, made sure that
 # it doesn't continue if merging is required
@@ -65,17 +99,32 @@ git-rbp() {
         echo "reapplying stash"
         git stash pop
     fi
-} 
+}
 export -f git-rbp
 
-# git push new branch (for pushing new branches to origin)
-git-pnb()
-{
-    branch_name=$(git branch | grep \* | cut -d ' ' -f2)
-    git push --set-upstream origin $branch_name
-}
-export -f git-pnb
  
+# verified to work 10/19/18
+mv-ln() {
+	if (( $# < 2 )); then
+		echo "usage: > mv-ln source destination"
+		echo "moves something and links old path to destination"
+		return 1
+	fi
+
+	if [ -d "$2" ]; then
+		ARG2="$2"/$(basename "$1")
+	else
+		ARG2="$2"
+	fi
+	
+	echo "moving \"$1\" to \"$2\""
+	mv "$1" "$ARG2"
+	ln -s "$ARG2" "$1"
+}
+export -f mv-ln
+
+########################################## 
+
 # verified to work, 10/31/18 <- bugs found since
 # screen reattach, never makes recursive screens 
 # sr() {
@@ -93,19 +142,5 @@ export -f git-pnb
 # } 
 # export -f sr 
 
-########################################## 
- 
-# added by Anaconda3 installer 
-#export PATH="$HOME/anaconda3/bin:$PATH" 
- 
-# for local executables/libs 
-#export PATH="$HOME/bin:$PATH" 
-#export LD_LIBRARY_PATH="$HOME/lib:$LD_LIBRARY_PATH" 
- 
-# for cuda (not needed in general) 
-#export PATH="/usr/local/cuda-8.0/bin:$PATH" 
-#export LD_LIBRARY_PATH="/usr/local/cuda-8.0/lib64:$LD_LIBRARY_PATH" 
-#export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH" 
- 
 # for parallel models 
 #export TF_MIN_GPU_MULTIPROCESSOR_COUNT=2 
