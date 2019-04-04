@@ -1,17 +1,16 @@
-# we have a special home so we ignore all the nonsense folders
-export HOME="/c/Users/dwyer/Favorites"
+#export HOME="/c/Users/dwyer/Favorites"
 export USER_EMAIL=ddeighan@umassd.edu
 
 export PATH="/c/Windows/System32:$PATH"
 export PATH="/c/Users/dwyer/Anaconda3:$PATH"
 export PATH="/c/Users/dwyer/Anaconda3/Scripts:$PATH"
-export PATH="$HOME/Non-Syncing-Files/bin:$PATH"
+export PATH="$HOME/Misc/bin:$PATH"
 
 #. /c/Users/dwyer/Anaconda3/etc/profile.d/conda.sh
 #conda activate
 
 ######################## ADDED FOR GW-ANALYSIS-DNN ########################
-export GW_DNN_INSTALL_PATH="/c/Users/dwyer/Non-Syncing-Files/Work/gw-analysis-dnn"
+export GW_DNN_INSTALL_PATH="/c/Users/dwyer/Misc/Work/gw-analysis-dnn"
 export GW_DNN_INSTALLED="TRUE"
 
 # add scripts to path
@@ -29,10 +28,6 @@ alias mit_cloud="ssh ddeighan@txe1-login.mit.edu"
 alias ghpcc="ssh dd13d@ghpcc06.umassrc.org"
 alias umd="ssh ddeighan@$UMD_IP"
 
-# needed(?) for cuDNN
-#export CPATH="$HOME/anaconda3/include:$CPATH"
-#export LIBRARY_PATH="$HOME/anaconda3/lib$LIBRARY_PATH"
-#export LD_LIBRARY_PATH="$HOME/anaconda3/lib:$LD_LIBRARY_PATH"
 ###########################################################################
 
 if [ -f ~/.bash_aliases ]; then
@@ -41,9 +36,9 @@ fi
 
 # windows specific stuff below:
 
-to-win-path() {
+to-win() {
     if (( $# != 1 )); then
-        echo "usage: > to-win-path unix-path"
+        echo "usage: to-win unix-path > win-path"
         return 1
     fi
 
@@ -57,9 +52,10 @@ to-win-path() {
 
 	echo $ARG1 | tr '/' '\\' # return new path (translated)
 }
-export -f to-win-path
+export -f to-win
 
-to-nix-path() {
+# now lives in .bash_aliases
+to-nix() {
     if (( $# == 1 )) && [ "$1" != '-h' ]; then
 	    ARG1="$1"
     elif [ "$1" = '-nc' ]; then
@@ -68,27 +64,33 @@ to-nix-path() {
             ARG1="/c${ARG1:2}" # start with linux-style C drive
         fi
     else
-        echo "usage: > to-nix-path [-nc] 'win_path' (must be quoted)"
+        echo "usage: to-nix [-nc] 'win-path' (must be quoted) > nix-path"
         echo "note: -nc converts the 'C:' to unix style as well..."
         return 1
     fi
 
 	echo $ARG1 | tr '\\' '/' # return new path (translated)
 }
-export -f to-nix-path
+export -f to-nix
 
+unalias ln # unalias ln='ln -s'
 # verified to work 12/30/18
 # makes symbolic links (NOTE: developer mode must be on!)
 # NOTE: symbolic links appear to be the best kind there is
-mkln() {
-    if (( $# != 2 )); then
-		echo "usage: > mkln target link_name"
-		echo "note: dot (.) for link_name means preserve target_name as link_name"
+ln() {
+    if [ "$1" = "-h" ] || (( $# == 0 )); then
+		echo "usage: > ln target [link_name]"
+		echo "note: dot (.) (or no) link_name means preserve target_name as link_name"
 		echo "note: non-local link_name's aren't allowed"
         return 1
     fi
 	
-    link_name="$2"
+    if (( $# == 1 )); then
+        link_name=. # this is behaviour of real ln
+    else
+        link_name="$2"
+    fi
+
     link_base=$(basename "$link_name")
     if ! [ "$link_base" == "$link_name" ]; then
         echo "non-local link_names aren't supported, please cd to that directory first instead"
@@ -103,40 +105,20 @@ mkln() {
         return 1
     fi
 
-	# dot (.) means preserve target name as link name
+	#dot (.) means preserve target name as link name
 	if [ "$link_name" == "." ]; then
 		link_name=$(basename "$1")
 	fi
     
-	target=$(to-win-path "$1")
-	link_name=$(to-win-path "$link_name")
+	target=$(to-win "$1")
+	link_name=$(to-win "$link_name")
 		
 	# the actual windows command takes args in reverse order
 	command="mklink $mklink_args \"$link_name\" \"$target\""
 	out=$(cmd.exe /c "$command")
-    echo $(to-nix-path "$out")
+    echo $(to-nix "$out")
 }
-export -f mkln
-
-# verified to work 10/19/18
-mv-ln() {
-	if (( $# < 2 )); then
-		echo "usage: > mv-ln source destination"
-		echo "moves something and links old path to destination"
-		return 1
-	fi
-
-	if [ -d "$2" ]; then
-		ARG2="$2"/$(basename "$1")
-	else
-		ARG2="$2"
-	fi
-	
-	echo "moving \"$1\" to \"$2\""
-	mv "$1" "$ARG2"
-	mkln "$ARG2" "$1"
-}
-export -f mv-ln
+export -f ln
 
 # for unblocking files from the internet
 # use * to unblock multiple files (dont use directories)
@@ -153,7 +135,46 @@ unblock-files() {
         # cmd="powershell -Command \"Unblock-File -Path \"$win_path\"\""; $cmd
         # echo cmd # TODO: does this work?
     done
-    
 }
 export -f unblock-files
 
+
+# verified to work
+get_path_depth() {
+	counted_char=/
+	res="${1//[^$counted_char]}"
+	echo "${#res}"
+	# technically should have a -1 because root has a '/'
+}
+
+# verified to work 3/26/19
+# finds relative path with symbolic links in home dir
+relpath-sym() {
+	#usage='relpath-sym unsimplified-path > simplified_path'
+    #if-h-then-usage
+
+    simplest_path=$(realpath "$1")
+	shortest_len=$(get_path_depth "$simplest_path")
+	#echo path: $simplest_path
+    #echo len: $shortest_len
+    for item in $(ls ~); do
+		if [ -d ~/$item ]; then
+		    #echo item: $HOME/$item
+            item="$item"/$(realpath --relative-to "$HOME/$item" "$1")
+            item="${item%/.}" # deletes a trailing '/.' if it exists...
+			#echo rel-item: $item
+            len=$(get_path_depth "$item")
+            #echo rel-item len: $len
+            if (( len < shortest_len )); then
+                #echo shorter!
+                simplest_path=$HOME/"$item"
+                shortest_len=$len
+            fi
+        fi
+	done
+	echo $simplest_path
+}
+export -f relpath-sym
+
+# cd to simplifed directory (relative to home links)
+cd "$(relpath-sym .)"

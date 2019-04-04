@@ -140,3 +140,4 @@ export PATH="$HOME/Documents/Work/GWProject/gw-analysis-dnn/scripts/bash_utils:$
 
 ####################################
 
+alias paper="cd ~/Documents/Work/GWProject/DNN-high-mass/paper"
