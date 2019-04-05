@@ -85,6 +85,7 @@ ln() {
         return 1
     fi
 	
+    target="$1"
     if (( $# == 1 )); then
         link_name=. # this is behaviour of real ln
     else
@@ -98,19 +99,19 @@ ln() {
     fi
     
     mklink_args=""
-	if [ -d "$1" ]; then # if target is a directory
+	if [ -d "$target" ]; then # if target is a directory
         mklink_args="/D"
-    elif ! [ -e "$1" ]; then
-        echo "target: \"$1\" doesn't exist..."
+    elif ! [ -e "$target" ]; then
+        echo "target: \"$target\" doesn't exist..."
         return 1
     fi
 
 	#dot (.) means preserve target name as link name
 	if [ "$link_name" == "." ]; then
-		link_name=$(basename "$1")
+		link_name=$(basename "$target")
 	fi
     
-	target=$(to-win "$1")
+	target=$(to-win "$target")
 	link_name=$(to-win "$link_name")
 		
 	# the actual windows command takes args in reverse order
@@ -179,4 +180,3 @@ export -f relpath-sym
 # TODO: fix! (doesn't work in git bash)
 # cd to simplifed directory (relative to home links)
 # cd "$(relpath-sym .)"
-cd ~
