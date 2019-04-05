@@ -1,7 +1,7 @@
-#export HOME="/c/Users/dwyer/Favorites"
+export HOME="/c/Users/dwyer/Favorites"
 export USER_EMAIL=ddeighan@umassd.edu
 
-export PATH="/c/Windows/System32:$PATH"
+# export PATH="/c/Windows/System32:$PATH"
 export PATH="/c/Users/dwyer/Anaconda3:$PATH"
 export PATH="/c/Users/dwyer/Anaconda3/Scripts:$PATH"
 export PATH="$HOME/Misc/bin:$PATH"
@@ -176,5 +176,7 @@ relpath-sym() {
 }
 export -f relpath-sym
 
+# TODO: fix! (doesn't work in git bash)
 # cd to simplifed directory (relative to home links)
-cd "$(relpath-sym .)"
+# cd "$(relpath-sym .)"
+cd ~

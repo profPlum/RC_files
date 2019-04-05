@@ -49,14 +49,28 @@ alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
 # this makes ctrl+arrow skip over words...
 # doesn't go in inputrc for some reason: https://askubuntu.com/questions/162247/why-does-ctrl-left-arrow-not-skip-words/288530
 # NOTE: git bash needs it in inputrc so it is there aswell...
-bind '"\e[1;5D" backward-word'
-bind '"\e[1;5C" forward-word'
+# bind '"\e[1;5D" backward-word'
+# bind '"\e[1;5C" forward-word'
 
 ############# General Purpose Functions: #############
 
 # note: doesn't work currently
 # macro for help strings, must have defined 'usage' (help str)
 alias if-h-then-usage='if [ "$1" = "-h" ]; then; echo $usage; fi'
+
+# *getopt counterpart* that gets remaining
+# positional args with index
+# USAGE: getarg 1 $@
+# based off this: https://stackoverflow.com/questions/11742996/shell-script-is-mixing-getopts-with-positional-parameters-possible
+getarg() {
+    #no need to decrease because it is offset
+    #by the positional index arg itself! lol
+    index=$1 # $(( $1-1 ))
+
+    echo ${@:$OPTIND+$index:1}
+}
+export -f getarg
+
 
 # git view commit changes
 git-vcc() {
