@@ -2,23 +2,24 @@
 # IMPORTANT: if this is giving you weird errors remove all '\r' and '\t' characters
  
 ##### contains aliases, functions and optionally ##### 
- 
-##### path additions needed for all .bashrc files ##### 
-# to use do mv .bash_aliases.txt .bash_aliases; then 
-# if not present add this to your .bashrc file: 
-# if [ -f ~/.bash_aliases ]; then
-    # . ~/.bash_aliases
-# fi
- 
-# super fast shortcuts for gw-analysis-dnn
-alias gw='cd $GW_DNN_INSTALL_PATH/scripts'
-alias td='cd $GW_DNN_INSTALL_PATH/training_data'
-alias cfg='cd $GW_DNN_INSTALL_PATH/configs'
+##### path additions needed for all .bashrc files #####
+
+##################### Misc: #######################
 
 # TODO: put inside a .bash_profile (this is where all environment
 # initialization is supposed to happen)
 export USER_EMAIL=ddeighan@umassd.edu
 export PATH="$HOME/bin:$PATH"
+
+# for gnome desktop shortcuts
+# IMPORTANT: the app command doesn't have access to env variables or ~
+# workaround if these are necessary is to do bash -c "BASH_CMD"
+alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
+ 
+  # super fast shortcuts for gw-analysis-dnn
+alias gw='cd $GW_DNN_INSTALL_PATH/scripts'
+alias td='cd $GW_DNN_INSTALL_PATH/training_data'
+alias cfg='cd $GW_DNN_INSTALL_PATH/configs'
  
 ############## general purpose aliases: ##############
  
@@ -31,79 +32,22 @@ alias fdif='git diff --no-index' # file diff (unrelated to git repos)
 alias cp='cp -r'
 alias scp='scp -r'
 alias ln='ln -s' # symbolic links are best
+alias cd..='cd ..'
 
-################# anaconda: ##################### 
+##################### anaconda: #####################
 
 alias ca='conda activate' # conda activate
 alias cda='conda deactivate' # conda deactivate, needs this twice or undefined behaviour 11/7/18
 alias cie='conda env create -f' # conda import env
 alias cee='conda env export' # conda export env
 
-##################### Ubuntu: #######################
+##################### Git: #####################
 
-# for gnome desktop shortcuts
-# IMPORTANT: the app command doesn't have access to env variables or ~
-# workaround if these are necessary is to do bash -c "BASH_CMD"
-alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
-
-# this makes ctrl+arrow skip over words...
-# doesn't go in inputrc for some reason: https://askubuntu.com/questions/162247/why-does-ctrl-left-arrow-not-skip-words/288530
-# NOTE: git bash needs it in inputrc so it is there aswell...
-# bind '"\e[1;5D" backward-word'
-# bind '"\e[1;5C" forward-word'
-
-############# General Purpose Functions: #############
-
-# note: doesn't work currently
-# macro for help strings, must have defined 'usage' (help str)
-alias if-h-then-usage='if [ "$1" = "-h" ]; then; echo $usage; fi'
-
-# *getopt counterpart* that gets remaining
-# positional args with index
-# USAGE: getarg 1 $@
-# based off this: https://stackoverflow.com/questions/11742996/shell-script-is-mixing-getopts-with-positional-parameters-possible
-getarg() {
-    #no need to decrease because it is offset
-    #by the positional index arg itself! lol
-    index=$1 # $(( $1-1 ))
-
-    echo ${@:$OPTIND+$index:1}
-}
-export -f getarg
-
-
-# git view commit changes
-git-vcc() {
+# git view commit (changes)
+git-vc() {
     git diff $1~1 $1
 }
-export -f git-vcc
-
-zd() { # zip dir
-    zip -r "$1".zip "$1"
-}
-export -f zd
-
-# Easy extract
-extract () {
-  if [ -f $1 ] ; then
-      case $1 in
-          *.tar.bz2)   tar xvjf $1    ;;
-          *.tar.gz)    tar xvzf $1    ;;
-          *.bz2)       bunzip2 $1     ;;
-          *.rar)       rar x $1       ;;
-          *.gz)        gunzip $1      ;;
-          *.tar)       tar xvf $1     ;;
-          *.tbz2)      tar xvjf $1    ;;
-          *.tgz)       tar xvzf $1    ;;
-          *.zip)       unzip $1       ;;
-          *.Z)         uncompress $1  ;;
-          *.7z)        7z x $1        ;;
-          *)           echo "don't know how to extract '$1'..." ;;
-      esac
-  else
-      echo "'$1' is not a valid file!"
-  fi
-}
+export -f git-vc
 
 # git push new branch (for pushing new branches to origin)
 git-pnb() {
@@ -147,7 +91,43 @@ hdif() {
     fi 
     git diff HEAD -- $ARG1
 }
-export -f hdif 
+export -f hdif
+
+############# General Purpose Functions: #############
+
+# logs command output!
+log() {
+    $@ 2> >(tee .err.log) > >(tee .out.log)
+    echo; echo logged output to .err.log \& .out.log respectively
+}
+export -f log
+
+zd() { # zip dir
+    zip -r "$1".zip "$1"
+}
+export -f zd
+
+# Easy extract
+extract () {
+  if [ -f $1 ] ; then
+      case $1 in
+          *.tar.bz2)   tar xvjf $1    ;;
+          *.tar.gz)    tar xvzf $1    ;;
+          *.bz2)       bunzip2 $1     ;;
+          *.rar)       rar x $1       ;;
+          *.gz)        gunzip $1      ;;
+          *.tar)       tar xvf $1     ;;
+          *.tbz2)      tar xvjf $1    ;;
+          *.tgz)       tar xvzf $1    ;;
+          *.zip)       unzip $1       ;;
+          *.Z)         uncompress $1  ;;
+          *.7z)        7z x $1        ;;
+          *)           echo "don't know how to extract '$1'..." ;;
+      esac
+  else
+      echo "'$1' is not a valid file!"
+  fi
+}
 
 # verified to work 10/19/18
 mv-ln() {
@@ -170,22 +150,28 @@ mv-ln() {
 }
 export -f mv-ln
 
-# verified to work, 10/31/18 <- bugs found since
-# screen reattach, never makes recursive screens 
-# sr() {
-    ## if this works the function ends here 
-    # out="$(screen -r $@)"
- 
-    ## if we aren't attached to a screen & none exist then make one 
-    ## =~ means equals regex expression (only available in [[]]) 
-    # if [[ "$out" =~ "^There is no screen to be resumed" ]]; then
-        # screen
-    # fi
- 
-    # quotes to perserve newlines 
-    # echo "$out" 
-# } 
-# export -f sr 
+############### Helpers: ###############
 
-# for parallel models 
-#export TF_MIN_GPU_MULTIPROCESSOR_COUNT=2 
+# where $1 is the real file name
+# & $2 is the 'file id' (from shared url)
+# verified to work (3/2/18)
+download_drive_file() {
+	wget "https://drive.google.com/uc?authuser=0&id=$2&export=download" -O $1
+}
+
+# *getopt counterpart* that gets 
+# remaining positional args by index
+# USAGE: getarg 1 $@
+getarg() {
+    #no need to decrease because it is offset
+    #by the positional index arg itself! lol
+    index=$1 # $(( $1-1 ))
+
+    echo ${@:$OPTIND+$index:1}
+}
+export -f getarg
+# ^ based off this: https://stackoverflow.com/questions/11742996/shell-script-is-mixing-getopts-with-positional-parameters-possible
+
+# note: doesn't work currently
+# macro for help strings, must have defined 'usage' (help str)
+alias if-h-then-usage='if [ "$1" = "-h" ]; then; echo $usage; fi'
