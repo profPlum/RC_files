@@ -106,9 +106,6 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -125,31 +122,44 @@ fi
 ################################## MY STUFF ########################################
 # IMPORTANT: if this is giving you weird errors remove all '\r' and '\t' characters
 
+export GW_DNN_INSTALL_PATH=~/Documents/Work/GW-Project/gw-analysis-dnn
 export USER_EMAIL=ddeighan@umassd.edu
 export PATH="$HOME/bin:$PATH"
 
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+alias conda='conda.exe'
+alias python='python.exe'
+
+#conda init
+#cat /mnt/c/Users/dwyer/Miniconda3/etc/profile.d/conda.sh | tr '\r' ' ' > /mnt/c/Users/dwyer/Miniconda3/etc/profile.d/conda.sh
+#. /mnt/c/Users/dwyer/Miniconda3/etc/profile.d/conda.sh
+#conda activate
+
 #export NIX_ROOT_IN_WINDOWS='C:/Users/dwyer/AppData/Local/Packages/CanonicalGroupLimited.Ubuntu18.04onWindows_79rhkp1fndgsc/LocalState/rootfs'
-export NIX_ROOT_IN_WINDOWS='C:/Users/dwyer/AppData/Local/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs'
+export NIX_ROOT_IN_WIN='C:/Users/dwyer/AppData/Local/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs'
 # ^ depends on the version...
 
 # converts a linux path to the corresponding path in the global windows file system
 to-win() {
-    # default path is local dir
-    if (( $# == 0 )); then
-        ARG1=$(realpath '.')
-    else
-        ARG1=$(realpath $1)
+    if (( $# != 1 )); then
+        echo "usage: to-win unix-path > win-path"
+        return 1
     fi
-    
-    # if we are alread in the windows file system
-    # then we just need to start the path with 'C:'
-    # (this is also required because C: drive isn't
-    # mounted in the actual files system)
+
+	ARG1=$(realpath $1)
+	
+    #if we are already in the windows file system
+    #then we just need to start the path with 'C:'
     if [ "${ARG1:0:6}" = "/mnt/c" ]; then
-        echo "C:${ARG1:6}" | tr '/' '\\'
+		ARG1="C:${ARG1:6}"
     else
-        echo $NIX_ROOT_IN_WINDOWS$ARG1 | tr '/' '\\'
+        ARG1=$NIX_ROOT_IN_WINDOWS$ARG1
     fi
+
+	echo $ARG1 | tr '/' '\\' # return new path (translated)
 }
 export -f to-win
 
@@ -172,7 +182,7 @@ to-nix() {
 }
 export -f to-nix
 
-alias explorer_here='explorer.exe $(to-win-path)'
+alias exp='explorer.exe $(to-win .)'
 
 # verified to work
 get_path_depth() {
@@ -212,4 +222,24 @@ relpath-sym() {
 export -f relpath-sym
 
 # cd to simplifed directory (relative to home links)
-cd "$(relpath-sym .)"
+if ! [ $(pwd) = ~ ]; then    
+    cd "$(relpath-sym .)"
+fi
+
+# added by Anaconda3 2018.12 installer
+# >>> conda init >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$(CONDA_REPORT_ERRORS=false '/home/dwyer/anaconda3/bin/conda' shell.bash hook 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    \eval "$__conda_setup"
+else
+    if [ -f "/home/dwyer/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/dwyer/anaconda3/etc/profile.d/conda.sh"
+        CONDA_CHANGEPS1=false conda activate base
+    else
+        \export PATH="/home/dwyer/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda init <<<
+alias paper="cd /home/dwyer/GW-Project/DNN-high-mass/paper"
