@@ -1,5 +1,11 @@
 "\e[A": history-search-backward
 "\e[B": history-search-forward
 
-"\e[1;5D": backward-word
-"\e[1;5C": forward-word
+# for mac
+"\eb": backward-word
+"\ef": forward-word
+#"\e[1;2D": backward-select
+
+# for nix?
+#"\e[1;5D": backward-word
+#"\e[1;5C": forward-word
