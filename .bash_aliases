@@ -1,5 +1,5 @@
 #!/bin/bash
-# IMPORTANT: if this is giving you weird errors remove all '\r' and '\t' characters
+# IMPORTANT: if this is giving you weird errors remove all '' and '\t' characters
  
 ##### contains aliases, functions and optionally ##### 
 ##### path additions needed for all .bashrc files #####
@@ -9,39 +9,56 @@
 # TODO: put inside a .bash_profile (this is where all environment
 # initialization is supposed to happen)
 export USER_EMAIL=ddeighan@umassd.edu
-export PATH="$HOME/bin:$PATH"
+#export PATH="$HOME/bin:$PATH"
 
 # for gnome desktop shortcuts
 # IMPORTANT: the app command doesn't have access to env variables or ~
 # workaround if these are necessary is to do bash -c "BASH_CMD"
-alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
+# alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
  
-  # super fast shortcuts for gw-analysis-dnn
+# super fast shortcuts for gw-analysis-dnn
 alias gw='cd $GW_DNN_INSTALL_PATH/scripts'
 alias td='cd $GW_DNN_INSTALL_PATH/training_data'
 alias cfg='cd $GW_DNN_INSTALL_PATH/configs'
+
+export UMD_IP="134.88.5.42"
+alias mit_cloud="ssh ddeighan@txe1-login.mit.edu"
+alias ghpcc="ssh dd13d@ghpcc06.umassrc.org"
+alias umd="ssh ddeighan@$UMD_IP"
  
 ############## general purpose aliases: ##############
  
-alias fcon='grep -n ">>"' # find git conflicts
+alias fcon='grep -n "<<"' # find git conflicts
 alias mytop='top -u $USER'
-alias gch='git checkout HEAD --' # discard file changes
-alias git-frb="git fetch; git rebase" # when local branch is stale
 alias sr='screen -r' # simple alternative to full function
 alias fdif='git diff --no-index' # file diff (unrelated to git repos)
 alias cp='cp -r'
-alias scp='scp -r'
-alias ln='ln -s' # symbolic links are best
+alias scp='scp -r' # not necessary if you scping a directory then you should zip first...
+#alias ln='ln -s' # symbolic links are best
 alias cd..='cd ..'
+alias rld='. ~/.bashrc'
+alias hst='hostname'
 
-##################### anaconda: #####################
+# request interactive slurm shell
+alias slurm-ishell='srun -N 2 --ntasks-per-node 2 --pty bash'
+
+##################### anaconda/pip: #####################
 
 alias ca='conda activate' # conda activate
 alias cda='conda deactivate' # conda deactivate, needs this twice or undefined behaviour 11/7/18
 alias cie='conda env create -f' # conda import env
-alias cee='conda env export' # conda export env
+alias cee='conda env export --no-builds >' # conda export env
+alias cud='conda update -n base conda' # conda up-date
+alias pud='pip install --upgrade pip' # pip up-date
 
 ##################### Git: #####################
+
+alias gch='git checkout HEAD --' # discard file changes
+alias gs='git stash'
+alias gsa='git stash apply'
+alias gc='git commit'
+alias gco='git checkout'
+alias git-frb="git fetch; git rebase" # when local branch is stale
 
 # git view commit (changes)
 git-vc() {
@@ -69,7 +86,8 @@ git-rbp() {
         return 1 # this value needs to be positive
     fi
     
-    git reset --hard HEAD~1
+    # back 10 incase of rebases
+    git reset --hard HEAD~10
     git pull
  
     # if there were local changes that 
@@ -97,7 +115,8 @@ export -f hdif
 
 # logs command output!
 log() {
-    $@ 2> >(tee .err.log) > >(tee .out.log)
+    # braces allow for piping of same output to multiple files
+    {$@ 2> >(tee .err.log)} &> >(tee .out.log)
     echo; echo logged output to .err.log \& .out.log respectively
 }
 export -f log
@@ -107,26 +126,26 @@ zd() { # zip dir
 }
 export -f zd
 
-# Easy extract
-extract () {
-  if [ -f $1 ] ; then
-      case $1 in
-          *.tar.bz2)   tar xvjf $1    ;;
-          *.tar.gz)    tar xvzf $1    ;;
-          *.bz2)       bunzip2 $1     ;;
-          *.rar)       rar x $1       ;;
-          *.gz)        gunzip $1      ;;
-          *.tar)       tar xvf $1     ;;
-          *.tbz2)      tar xvjf $1    ;;
-          *.tgz)       tar xvzf $1    ;;
-          *.zip)       unzip $1       ;;
-          *.Z)         uncompress $1  ;;
-          *.7z)        7z x $1        ;;
-          *)           echo "don't know how to extract '$1'..." ;;
-      esac
-  else
-      echo "'$1' is not a valid file!"
-  fi
+# Easy extract, maybe unneeded?
+extract() {
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)   tar xvjf $1    ;;
+            *.tar.gz)    tar xvzf $1    ;;
+            *.bz2)       bunzip2 $1     ;;
+            *.rar)       rar x $1       ;;
+            *.gz)        gunzip $1      ;;
+            *.tar)       tar xvf $1     ;;
+            *.tbz2)      tar xvjf $1    ;;
+            *.tgz)       tar xvzf $1    ;;
+            *.zip)       unzip $1       ;;
+            *.Z)         uncompress $1  ;;
+            *.7z)        7z x $1        ;;
+            *)           echo "don't know how to extract '$1'..." ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
 }
 
 # verified to work 10/19/18
@@ -145,8 +164,8 @@ mv-ln() {
 	
 	echo "moving \"$1\" to \"$2\""
 	mv "$1" "$ARG2"
-	#ln -s "$ARG2" "$1"
-	ln "$ARG2" "$1" # alias expands to use -s
+	ln -s "$ARG2" "$1"
+	#ln "$ARG2" "$1" # alias expands to use -s
 }
 export -f mv-ln
 
@@ -174,4 +193,4 @@ export -f getarg
 
 # note: doesn't work currently
 # macro for help strings, must have defined 'usage' (help str)
-alias if-h-then-usage='if [ "$1" = "-h" ]; then; echo $usage; fi'
+alias if-h-then-usage='[ "$1" = "-h" ] && echo $usage'
