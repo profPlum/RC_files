@@ -1,66 +1,35 @@
-#!/bin/bash
-export HOME="/c/Users/dwyer/Favorites"
-export USER_EMAIL=ddeighan@umassd.edu
+#generic win .bashrc file additions
+#NOTE: requires NIX_ROOT_IN_WIN & WIN_ROOT_IN_NIX set appropriately
 
-# export PATH="/c/Windows/System32:$PATH"
-export PATH="/c/Users/dwyer/Anaconda3:$PATH"
-export PATH="/c/Users/dwyer/Anaconda3/Scripts:$PATH"
-export PATH="$HOME/Misc/bin:$PATH"
-
-#conda init > /dev/null
-#conda_install_path=/c/Users/dwyer/Miniconda3
-#. $conda_install_path/etc/profile.d/conda.sh
-#conda activate
-
-######################## ADDED FOR GW-ANALYSIS-DNN ########################
-export GW_DNN_INSTALL_PATH=~/"Misc/GW-Project/gw-analysis-dnn"
-export GW_DNN_INSTALLED="TRUE"
-
-# add scripts to path
-#export PATH="$GW_DNN_INSTALL_PATH/scripts/bash_utils:$PATH"
-
-# easy cd's that are made frequently
-alias timer="cd ~/Work/Java/'ActivityFocusTimer'"
-
-export UMD_IP="134.88.5.42"
-alias mit_cloud="ssh ddeighan@txe1-login.mit.edu"
-alias ghpcc="ssh dd13d@ghpcc06.umassrc.org"
-alias umd="ssh ddeighan@$UMD_IP"
-
-###########################################################################
-
-if [ -f ~/.bash_aliases ]; then
-   . ~/.bash_aliases
-fi
-
-# windows specific stuff below:
-
+# converts a linux path to the corresponding path in the global windows file system
 to-win() {
     if (( $# != 1 )); then
         echo "usage: to-win unix-path > win-path"
         return 1
     fi
 
-	ARG1=$1
-	if [ "${ARG1:0:2}" = "/c" ]; then
-		ARG1="C:${ARG1:2}" # start with windows-style C drive
-    elif [ "${ARG1::1}" = "~" ]; then
-        # most windows utilies dont accept '~'
-        ARG1="$HOME${ARG1:1}"
+	ARG1=$(realpath $1)
+	
+    #if we are already in the windows file system
+    #then we just need to start the path with 'C:'
+    if [[ "$ARG1" =~ ^$WIN_ROOT_IN_NIX ]]; then
+		ARG1="${ARG1#$WIN_ROOT_IN_NIX}"
+    else
+        ARG1="$NIX_ROOT_IN_WINDOWS$ARG1"
     fi
 
 	echo $ARG1 | tr '/' '\\' # return new path (translated)
 }
 export -f to-win
 
-# now lives in .bash_aliases
+# converts win paths to nix paths
 to-nix() {
     if (( $# == 1 )) && [ "$1" != '-h' ]; then
 	    ARG1="$1"
     elif [ "$1" = '-nc' ]; then
         ARG1="$2"
         if [ "${ARG1:0:2}" = "C:" ]; then
-            ARG1="/c${ARG1:2}" # start with linux-style C drive
+            ARG1="$WIN_ROOT_IN_NIX${ARG1:2}" # start with linux-style C drive
         fi
     else
         echo "usage: to-nix [-nc] 'win-path' (must be quoted) > nix-path"
@@ -111,11 +80,12 @@ ln() {
 	fi
     
 	target=$(to-win "$target")
-	# link_name=$(to-win "$link_name") #already a local name
-		
+	#link_name=$(to-win "$link_name") #already a local name
+	
 	# the actual windows command takes args in reverse order
 	command="mklink $mklink_args \"$link_name\" \"$target\""
-	out=$(cmd.exe /c "$command")
+	echo $command
+    out=$(cmd.exe /c "$command")
     echo $(to-nix "$out")
 }
 export -f ln
@@ -137,7 +107,6 @@ unblock-files() {
 }
 export -f unblock-files
 
-
 # verified to work
 get_path_depth() {
 	counted_char=/
@@ -149,30 +118,30 @@ get_path_depth() {
 # verified to work 3/26/19
 # finds relative path with symbolic links in home dir
 relpath-sym() {
-	# usage='relpath-sym unsimplified-path > simplified_path'
-    # if-h-then-usage
+	#usage='relpath-sym unsimplified-path > simplified_path'
+    #if-h-then-usage
 
     simplest_path=$(realpath "$1")
 	shortest_len=$(get_path_depth "$simplest_path")
-	# echo path: $simplest_path
-    # echo len: $shortest_len
+	#echo path: $simplest_path
+    #echo len: $shortest_len
     for item in $(ls ~) .; do
             item="${item%@}"
-		    # echo item: $HOME/$item
+		    #echo item: $HOME/$item
             item="$item"/$(realpath --relative-to "$HOME/$item" "$1")
             item="${item%/.}" # deletes a trailing '/.' if it exists...
-			# echo rel-item: $item
+			#echo rel-item: $item
             len=$(get_path_depth "$item")
-            # echo rel-item len: $len
+            #echo rel-item len: $len
             if (( len < shortest_len )); then
-                # echo shorter!
+                #echo shorter!
                 simplest_path=$HOME/"$item"
                 shortest_len=$len
             fi
 	done
 	echo $simplest_path
 }
-# export -f relpath-sym
+export -f relpath-sym
 
 # cd to simplifed directory (relative to home links)
-# cd "$(relpath-sym .)"
+cd "$(relpath-sym .)"
