@@ -1,3 +1,4 @@
+#!/bin/bash
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
@@ -138,6 +139,5 @@ export timer_install_dir=~/Desktop/TimerInstallDir
 
 export PATH="$HOME/Documents/Work/GWProject/gw-analysis-dnn/scripts/bash_utils:$PATH"
 
-####################################
-
 alias paper="cd ~/Documents/Work/GWProject/DNN-high-mass/paper"
+####################################
