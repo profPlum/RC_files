@@ -41,6 +41,7 @@ alias hst='hostname'
 
 # request interactive slurm shell
 alias slurm-ishell='srun -N 2 --ntasks-per-node 2 --pty bash'
+alias swch-me='watch squeue -u $USER' # slurm watch me
 
 ##################### anaconda/pip: #####################
 
@@ -48,6 +49,7 @@ alias ca='conda activate' # conda activate
 alias cda='conda deactivate' # conda deactivate, needs this twice or undefined behaviour 11/7/18
 alias cie='conda env create -f' # conda import env
 alias cee='conda env export --no-builds >' # conda export env
+alias cre='conda env remove -n' # conda remove env
 alias cud='conda update -n base conda' # conda up-date
 alias pud='pip install --upgrade pip' # pip up-date
 
@@ -58,6 +60,7 @@ alias gs='git stash'
 alias gsa='git stash apply'
 alias gc='git commit'
 alias gco='git checkout'
+alias gstat='git status'
 alias git-frb="git fetch; git rebase" # when local branch is stale
 
 # git view commit (changes)
