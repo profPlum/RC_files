@@ -41,7 +41,7 @@ alias hst='hostname'
 
 # request interactive slurm shell
 alias slurm-ishell='srun -N 2 --ntasks-per-node 2 --pty bash'
-alias swch-me='watch squeue -u $USER' # slurm watch me
+alias swatch-me='watch squeue -u $USER' # slurm watch me
 
 ##################### anaconda/pip: #####################
 
@@ -56,6 +56,7 @@ alias pud='pip install --upgrade pip' # pip up-date
 ##################### Git: #####################
 
 alias gch='git checkout HEAD --' # discard file changes
+alias ga='git add'
 alias gst='git status' # idea is: this is still longer to spell than gs
 alias gs='git stash'
 alias gsa='git stash apply'
