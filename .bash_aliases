@@ -1,7 +1,7 @@
 #!/bin/bash
 # IMPORTANT: if this is giving you weird errors remove all '' and '\t' characters
- 
-##### contains aliases, functions and optionally ##### 
+
+##### contains aliases, functions and optionally #####
 ##### path additions needed for all .bashrc files #####
 
 ##################### Misc: #######################
@@ -15,7 +15,7 @@ export USER_EMAIL=ddeighan@umassd.edu
 # IMPORTANT: the app command doesn't have access to env variables or ~
 # workaround if these are necessary is to do bash -c "BASH_CMD"
 # alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
- 
+
 # super fast shortcuts for gw-analysis-dnn
 alias gw='cd $GW_DNN_INSTALL_PATH/scripts'
 alias td='cd $GW_DNN_INSTALL_PATH/training_data'
@@ -25,9 +25,9 @@ export UMD_IP="134.88.5.42"
 alias mit_cloud="ssh ddeighan@txe1-login.mit.edu"
 alias ghpcc="ssh dd13d@ghpcc06.umassrc.org"
 alias umd="ssh ddeighan@$UMD_IP"
- 
+
 ############## general purpose aliases: ##############
- 
+
 alias fcon='grep -n "<<"' # find git conflicts
 alias mytop='top -u $USER'
 alias sr='screen -r' # simple alternative to full function
@@ -50,14 +50,19 @@ alias cda='conda deactivate' # conda deactivate, needs this twice or undefined b
 alias cie='conda env create -f' # conda import env
 alias cee='conda env export --no-builds >' # conda export env
 alias cre='conda env remove -n' # conda remove env
+alias cce='conda create -n'
 alias cud='conda update -n base conda' # conda up-date
 alias pud='pip install --upgrade pip' # pip up-date
 
 ##################### Git: #####################
 
 alias gch='git checkout HEAD --' # discard file changes
+alias gp='git push'
 alias ga='git add'
-alias gst='git status' # idea is: this is still longer to spell than gs
+alias gl='git log'
+alias gr='git reset'
+# v idea is: similar to 'gist' & still longer to spell than gs
+alias gst='git status'
 alias gs='git stash'
 alias gsa='git stash apply'
 alias gc='git commit'
@@ -83,35 +88,35 @@ export -f git-pnb
 git-rbp() {
     echo "stashing changes"
     stash_msg="$(git stash)"
-    
+
     # we don't continue if merging needs to happen
-    needs_merge=$(echo $stash_msg | grep -i 'needs merge') 
+    needs_merge=$(echo $stash_msg | grep -i 'needs merge')
     if [ "$needs_merge" != "" ]; then
         echo error: $stash_msg
         return 1 # this value needs to be positive
     fi
-    
+
     # back 10 incase of rebases
     git reset --hard HEAD~10
     git pull
- 
-    # if there were local changes that 
+
+    # if there were local changes that
     # were stashed then reapply them
     no_local_changes=$(echo $stash_msg | grep -i 'No local changes to save')
-    if [ "$no_local_changes" = "" ]; then 
+    if [ "$no_local_changes" = "" ]; then
         echo "reapplying stash"
         git stash pop
     fi
 }
 export -f git-rbp
 
-# diff with head 
+# diff with head
 hdif() {
     if (( $# == 1 )); then
         ARG1=$1
     else
         ARG1=.
-    fi 
+    fi
     git diff HEAD -- $ARG1
 }
 export -f hdif
@@ -166,7 +171,7 @@ mv-ln() {
 	else
 		ARG2="$2"
 	fi
-	
+
 	echo "moving \"$1\" to \"$2\""
 	mv "$1" "$ARG2"
 	ln -s "$ARG2" "$1"
@@ -183,7 +188,7 @@ download_drive_file() {
 	wget "https://drive.google.com/uc?authuser=0&id=$2&export=download" -O $1
 }
 
-# *getopt counterpart* that gets 
+# *getopt counterpart* that gets
 # remaining positional args by index
 # USAGE: getarg 1 $@
 getarg() {
