@@ -56,11 +56,12 @@ alias pud='pip install --upgrade pip' # pip up-date
 ##################### Git: #####################
 
 alias gch='git checkout HEAD --' # discard file changes
+alias gst='git status' # idea is: this is still longer to spell than gs
 alias gs='git stash'
 alias gsa='git stash apply'
 alias gc='git commit'
 alias gco='git checkout'
-alias gstat='git status'
+alias gb='git branch'
 alias git-frb="git fetch; git rebase" # when local branch is stale
 
 # git view commit (changes)
