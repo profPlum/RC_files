@@ -28,7 +28,7 @@ alias umd="ssh ddeighan@$UMD_IP"
 
 ############## general purpose aliases: ##############
 
-alias fcon='grep -n "<<"' # find git conflicts
+alias fcon='grep -n ">>"' # find git conflicts
 alias mytop='top -u $USER'
 alias sr='screen -r' # simple alternative to full function
 alias fdif='git diff --no-index' # file diff (unrelated to git repos)
