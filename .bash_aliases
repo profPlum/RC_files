@@ -58,6 +58,7 @@ alias pud='pip install --upgrade pip' # pip up-date
 
 alias gch='git checkout HEAD --' # discard file changes
 alias gp='git push'
+alias gpl='git pull'
 alias ga='git add'
 alias gl='git log'
 alias gr='git reset'
@@ -72,16 +73,14 @@ alias git-frb="git fetch; git rebase" # when local branch is stale
 
 # git view commit (changes)
 git-vc() {
-    git diff $1~1 $1
+    git diff $1~1 $1;
 }
-export -f git-vc
 
 # git push new branch (for pushing new branches to origin)
 git-pnb() {
     branch_name=$(git branch | grep \* | cut -d ' ' -f2)
     git push --set-upstream origin $branch_name
 }
-export -f git-pnb
 
 # verified to work on 10/19/18, made sure that
 # it doesn't continue if merging is required
@@ -108,7 +107,6 @@ git-rbp() {
         git stash pop
     fi
 }
-export -f git-rbp
 
 # diff with head
 hdif() {
@@ -119,22 +117,19 @@ hdif() {
     fi
     git diff HEAD -- $ARG1
 }
-export -f hdif
 
 ############# General Purpose Functions: #############
 
 # logs command output!
 log() {
     # braces allow for piping of same output to multiple files
-    {$@ 2> >(tee .err.log)} &> >(tee .out.log)
-    echo; echo logged output to .err.log \& .out.log respectively
+    { $@ 2> >(tee .err.log); } &> >(tee .out.log);
+    echo; echo logged output to .err.log \& .out.log respectively;
 }
-export -f log
 
 zd() { # zip dir
     zip -r "$1".zip "$1"
 }
-export -f zd
 
 # Easy extract, maybe unneeded?
 extract() {
@@ -177,7 +172,6 @@ mv-ln() {
 	ln -s "$ARG2" "$1"
 	#ln "$ARG2" "$1" # alias expands to use -s
 }
-export -f mv-ln
 
 ############### Helpers: ###############
 
@@ -198,7 +192,6 @@ getarg() {
 
     echo ${@:$OPTIND+$index:1}
 }
-export -f getarg
 # ^ based off this: https://stackoverflow.com/questions/11742996/shell-script-is-mixing-getopts-with-positional-parameters-possible
 
 # note: doesn't work currently
