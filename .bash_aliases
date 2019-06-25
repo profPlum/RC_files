@@ -28,7 +28,6 @@ alias umd="ssh ddeighan@$UMD_IP"
 
 ############## general purpose aliases: ##############
 
-alias fcon='grep -n ">>"' # find git conflicts
 alias mytop='top -u $USER'
 alias sr='screen -r' # simple alternative to full function
 alias fdif='git diff --no-index' # file diff (unrelated to git repos)
@@ -40,7 +39,10 @@ alias rld='. ~/.bashrc'
 alias hst='hostname'
 
 # request interactive slurm shell
-alias slurm-ishell='srun -N 2 --ntasks-per-node 2 --pty bash'
+# -N := num nodes, -n := num cores
+slurm-ishell() {
+  srun $@ --pty bash
+}
 alias swatch-me='watch squeue -u $USER' # slurm watch me
 
 ##################### anaconda/pip: #####################
@@ -56,12 +58,13 @@ alias pud='pip install --upgrade pip' # pip up-date
 
 ##################### Git: #####################
 
+alias fcon='grep -n ">>"' # find git conflicts
 alias gch='git checkout HEAD --' # discard file changes
 alias gp='git push'
 alias gpl='git pull'
 alias ga='git add'
 alias gl='git log'
-alias gr='git reset'
+alias gr='git reset --'
 # v idea is: similar to 'gist' & still longer to spell than gs
 alias gst='git status'
 alias gs='git stash'
