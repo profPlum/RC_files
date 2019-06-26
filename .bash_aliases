@@ -54,10 +54,9 @@ alias pud='pip install --upgrade pip' # pip up-date
 
 ##################### Git: #####################
 
-alias fcon='grep -n ">>"' # find git conflicts
-alias gch='git checkout HEAD --' # discard file changes
 alias gp='git push'
 alias gpl='git pull'
+alias grb='git rebase'
 alias ga='git add'
 alias gl='git log'
 alias gr='git reset --'
@@ -68,6 +67,9 @@ alias gsa='git stash apply'
 alias gc='git commit'
 alias gco='git checkout'
 alias gb='git branch'
+
+alias fcon='grep -n ">>"' # find git conflicts
+alias gch='git checkout HEAD --' # discard file changes
 alias git-frb="git fetch; git rebase" # when local branch is stale
 
 # git view commit (changes)
