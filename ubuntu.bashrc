@@ -133,6 +133,11 @@ unset __conda_setup
 
 ############# MY STUFF #############
 
+# for gnome desktop shortcuts
+# IMPORTANT: the app command doesn't have access to env variables or ~
+# workaround if these are necessary is to do bash -c "BASH_CMD"
+alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
+
 export GW_DNN_INSTALL_PATH=~/Documents/Work/GWProject/gw-analysis-dnn
 export timer_install_dir=~/Desktop/TimerInstallDir
 #alias focus_timer="cd $timer_install_dir; java -jar ActivityFocusTimer.jar > .timer_out.log 2> .timer_err.log"

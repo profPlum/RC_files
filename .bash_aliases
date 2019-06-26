@@ -11,11 +11,6 @@
 export USER_EMAIL=ddeighan@umassd.edu
 #export PATH="$HOME/bin:$PATH"
 
-# for gnome desktop shortcuts
-# IMPORTANT: the app command doesn't have access to env variables or ~
-# workaround if these are necessary is to do bash -c "BASH_CMD"
-# alias mkapp-sc='gnome-desktop-item-edit ~/Desktop --create-new'
-
 # super fast shortcuts for gw-analysis-dnn
 alias gw='cd $GW_DNN_INSTALL_PATH/scripts'
 alias td='cd $GW_DNN_INSTALL_PATH/training_data'
@@ -36,7 +31,8 @@ alias scp='scp -r' # not necessary if you scping a directory then you should zip
 #alias ln='ln -s' # symbolic links are best
 alias cd..='cd ..'
 alias rld='. ~/.bashrc'
-alias hst='hostname'
+alias hst='history'
+alias host='hostname'
 
 # request interactive slurm shell
 # -N := num nodes, -n := num cores
