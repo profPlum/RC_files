@@ -71,8 +71,17 @@ alias gco='git checkout'
 alias gb='git branch'
 
 alias fcon='grep -n ">>"' # find git conflicts
-alias gch='git checkout HEAD --' # discard file changes
 alias git-frb="git fetch; git rebase" # when local branch is stale
+
+# discard file/repo changes
+# (no args discard entire repo)
+gch() {
+  if (( $# < 1 )); then
+    git reset --hard
+  else
+    git checkout HEAD -- $@
+  fi
+}
 
 # git view commit (changes)
 git-vc() {
