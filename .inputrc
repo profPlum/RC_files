@@ -1,7 +1,10 @@
+# \e := escape
+
 "\e[A": history-search-backward
 "\e[B": history-search-forward
 
 # for mac
+# NOTE: \ef mapping to forward is likely Mac specific
 "\eb": backward-word
 "\ef": forward-word
 #"\e[1;2D": backward-select
