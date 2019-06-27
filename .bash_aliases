@@ -33,6 +33,7 @@ alias cd..='cd ..'
 alias rld='. ~/.bashrc'
 alias hst='history'
 alias host='hostname'
+alias watch='watch -n 1' # this checks status, which never takes too much cpu
 
 # request interactive slurm shell
 # -N := num nodes, -n := num cores
@@ -54,12 +55,13 @@ alias pud='pip install --upgrade pip' # pip up-date
 
 ##################### Git: #####################
 
+alias gf='git fetch'
 alias gp='git push'
 alias gpl='git pull'
 alias grb='git rebase'
 alias ga='git add'
 alias gl='git log'
-alias gr='git reset --'
+alias gr='git reset'
 # v idea is: similar to 'gist' & still longer to spell than gs
 alias gst='git status'
 alias gs='git stash'
