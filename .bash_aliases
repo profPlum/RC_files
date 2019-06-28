@@ -23,6 +23,8 @@ alias umd="ssh ddeighan@$UMD_IP"
 
 ############## general purpose aliases: ##############
 
+# can't follow links rn, it would need to be `find $@ . -name $1`
+alias find='find . -name'
 alias mytop='top -u $USER'
 alias sr='screen -r' # simple alternative to full function
 alias fdif='git diff --no-index' # file diff (unrelated to git repos)
