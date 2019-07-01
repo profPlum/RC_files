@@ -23,19 +23,23 @@ alias umd="ssh ddeighan@$UMD_IP"
 
 ############## general purpose aliases: ##############
 
-# can't follow links rn, it would need to be `find $@ . -name $1`
+## redefinitions:
+# v Can't follow links rn, it would need to be `find $@ . -name $1`
 alias find='find . -name'
-alias mytop='top -u $USER'
-alias sr='screen -r' # simple alternative to full function
-alias fdif='git diff --no-index' # file diff (unrelated to git repos)
-alias cp='cp -r'
-alias scp='scp -r' # not necessary if you scping a directory then you should zip first...
-#alias ln='ln -s' # symbolic links are best
-alias cd..='cd ..'
-alias rld='. ~/.bashrc'
+alias clr='clear'
 alias hst='history'
 alias host='hostname'
 alias watch='watch -n 1' # this checks status, which never takes too much cpu
+alias cp='cp -r'
+alias scp='scp -r' # usually if you're scping a directory you should zip first...
+alias ln='ln -s' # symbolic links are best, that's *why* they can point to dirs
+
+## unique commands:
+alias mytop='top -u $USER'
+alias sr='screen -r' # simple alternative to full function
+alias fdif='git diff --no-index' # file diff (unrelated to git repos)
+alias cd..='cd ..'
+alias rld='. ~/.bashrc'
 
 # request interactive slurm shell
 # -N := num nodes, -n := num cores
@@ -58,13 +62,13 @@ alias pud='pip install --upgrade pip' # pip up-date
 ##################### Git: #####################
 
 alias gf='git fetch'
+alias grb='git rebase'
 alias gp='git push'
 alias gpl='git pull'
-alias grb='git rebase'
 alias ga='git add'
 alias gl='git log'
 alias gr='git reset'
-# v idea is: similar to 'gist' & still longer to spell than gs
+# v Idea is: similar to 'gist' & still longer to spell than gs
 alias gst='git status'
 alias gs='git stash'
 alias gsa='git stash apply'
@@ -72,11 +76,12 @@ alias gc='git commit'
 alias gco='git checkout'
 alias gb='git branch'
 
-alias fcon='grep -n ">>"' # find git conflicts
 alias git-frb="git fetch; git rebase" # when local branch is stale
+alias fcon='grep -n ">>"' # find git conflicts
+alias hdif='git diff HEAD --' # diff with head (with no arg acts on entire repo)
 
 # discard file/repo changes
-# (no args discard entire repo)
+# (with no args acts on entire repo)
 gch() {
   if (( $# < 1 )); then
     git reset --hard
@@ -120,16 +125,6 @@ git-rbp() {
         echo "reapplying stash"
         git stash pop
     fi
-}
-
-# diff with head
-hdif() {
-    if (( $# == 1 )); then
-        ARG1=$1
-    else
-        ARG1=.
-    fi
-    git diff HEAD -- $ARG1
 }
 
 ############# General Purpose Functions: #############
@@ -183,8 +178,8 @@ mv-ln() {
 
 	echo "moving \"$1\" to \"$2\""
 	mv "$1" "$ARG2"
-	ln -s "$ARG2" "$1"
-	#ln "$ARG2" "$1" # alias expands to use -s
+  ln "$ARG2" "$1" # alias expands to use -s
+  #ln -s "$ARG2" "$1"
 }
 
 ############### Helpers: ###############
