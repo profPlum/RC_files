@@ -119,15 +119,29 @@ fi
 
 ############# MY STUFF #############
 
+load_conda() {
+    mv ~/.bash_profile ~/.bash_profile.conda.bak
+    conda init
+    . ~/.bash_profile
+    rm ~/.bash_profile
+    mv ~/.bash_profile.conda.bak ~/.bash_profile
+}
+
+RPS1_URL='ddeighan@rps1.cscvr.umassd.edu'
+RPS2_URL='ddeighan@rps2.cscvr.umassd.edu'
+
 alias stat='stat -x'
+alias pip='pip3'
+alias python='python3'
+alias rps2="ssh ddeighan@rps2.cscvr.umassd.edu"
+alias rps1="ssh ddeighan@rps.cscvr.umassd.edu"
+
+alias mmaml='cd ~/Desktop/MMAML/MMAML-Regression'
 
 export timer_install_dir=~/Desktop/.TimerInstallDir
-alias focus_timer="cd $timer_install_dir; java -jar ActivityFocusTimer.jar > .timer_out.log 2> .timer_err.log; cd -"
-
-GWProject_PATH="$HOME/Desktop"
-export GW_DNN_INSTALL_PATH=$GWProject_PATH/gw-analysis-dnn
-
-export PATH="$GWProject_PATH/gw-analysis-dnn/scripts/bash_utils:$PATH"
-alias paper="cd $GWProject_PATH/DNN-high-mass/paper"
+alias run_focus_timer="cd $timer_install_dir; java -jar ActivityFocusTimer.jar > .timer_out.log 2> .timer_err.log; cd -"
+alias timer='cd ~/Desktop/activityfocustimer'
 
 ####################################
+eval $(ssh-agent)
+printf "\e[?2004l" # turns off bracketed paste mode which is broken nonsense
