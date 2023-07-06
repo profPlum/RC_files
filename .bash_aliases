@@ -4,17 +4,29 @@
 ##### contains aliases, functions and optionally #####
 ##### path additions needed for all .bashrc files #####
 
-##################### Misc: #######################
-
-# TODO: put inside a .bash_profile (this is where all environment
-# initialization is supposed to happen)
-export USER_EMAIL=ddeighan@umassd.edu
-#export PATH="$HOME/bin:$PATH"
-
-export UMD_IP="134.88.5.42"
-alias umd="ssh ddeighan@$UMD_IP"
-
 ############## general purpose aliases: ##############
+
+# verified to work 6/9/22
+repl_strs_in_dir() { # replaces all occurrences of $2 with $3 in folder: $1
+    /usr/bin/find "$1" -type f | xargs sed -i  "s|$2|$3|g"
+}
+
+map() { # NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3
+    cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done
+}
+amap() { # asynchronous version of map!
+    #cmd="$1"; shift; (for x in "$@"; do eval "$cmd $x" & done)
+    cmd="$1"; shift; for x in "$@"; do eval "$cmd $x" & done
+} # NOTE: we used to put the for loop in a subshell why is that?? is it still important?
+
+# Example amap usage:
+# substitute_cmd='X=5 eval "echo \$X"'
+# amap "$substitute_cmd" 1 2 3
+
+mb() { # mb=make backup! (moves original file)
+    #mv "$1" "${1%.*}.bak$RANDOM.${1##*.}"
+    mv "$1" "${1}.${RANDOM}.bak"
+}
 
 ## redefinitions:
 # v Can't follow links rn, it would need to be `find $@ . -name $1`
@@ -25,17 +37,26 @@ alias host='hostname'
 alias watch='watch -n 1' # this checks status, which never takes too much cpu
 alias cp='cp -r'
 alias scp='scp -r' # usually if you're scping a directory you should zip first...
+alias ls='ls -ltr' # sort results with most recently modified first!
+alias grep='grep -n'
+alias ln='ln -s' # symbolic links are best, that's *why* they can point to dirs
+alias ssh='ssh -q'
+alias vi='vim'
+# NOTE: not an alias but remember: `killall` over~ `pkill -9`
 
 # makes default ping target google DNS server
-ping() {
-    if (($# < 2)); then
-        ping 8.8.8.8
-    else
-        ping $@
-    fi
+#ping() {
+#    if (($# < 2)); then
+#        ping 8.8.8.8
+#    else
+#        ping $@
+#    fi
+#}
+
+cl() {
+    cd "$1"
+    ls
 }
-alias ln='ln -s' # symbolic links are best, that's *why* they can point to dirs
-# NOTE: not an alias but remember: `killall` over~ `pkill -9`
 
 ## unique commands:
 alias mytop='top -u $USER'
@@ -43,7 +64,15 @@ alias sr='screen -r' # simple alternative to full function
 alias sls='screen -ls'
 alias fdif='git diff --no-index' # file diff (unrelated to git repos)
 alias cd..='cd ..'
+#rld() { # faster reload implementation
+#	. ~/.bashrc
+#	source ~/.profile &
+#	source ~/.bash_profile &
+#}
+#alias rld='. ~/.profile; . ~/.bash_profile; . ~/.bashrc'
 alias rld='. ~/.bashrc'
+alias pdb='python -m pdb'
+alias jn='jupyter notebook'
 
 mkcd() {
   mkdir $1
@@ -59,6 +88,10 @@ alias swatch-me='watch squeue -u $USER' # slurm watch me
 
 ##################### anaconda/pip: #####################
 
+# use drop-in replacement when appropriate!
+echo warning: will alias conda=mamba if mamba exists
+[ $(which mamba) ] && alias conda='mamba'
+
 alias ci='conda install'
 alias cui='conda uninstall'
 alias ca='conda activate' # conda activate
@@ -67,12 +100,19 @@ alias cie='conda env create -f' # conda import env
 alias cee='conda env export --no-builds >' # conda export env
 alias cre='conda env remove -n' # conda remove env
 alias cce='conda create -n' # conda create env 
+#alias ccp='conda create --name myclone --clone myenv
+# ^ remember to use --clone NAME when you want to clone one
+
 alias cle='conda env list' # conda list env
 alias cre='conda env remove -n' # conda remove env
 alias cud='conda update -n base conda' # conda up-date
 alias pud='pip install --upgrade pip' # pip up-date
 
 ##################### Git: #####################
+
+git config --global rerere.enabled 1
+git config --global rerere.autoupdate true
+[ $(which vim) ] && git config --global core.editor "vim"
 
 alias gf='git fetch'
 alias grb='git rebase'
@@ -102,12 +142,14 @@ alias gca='git commit --amend'
 alias gfrb="git fetch; git rebase" # when local branch is stale
 alias fcon='grep -n ">>>"' # find git conflicts
 alias hdif='git diff HEAD --' # diff with head (with no arg acts on entire repo)
+# IMPORTANT: hdif > stash.patch, create a PATCH FILE from local changes! --> then do: `git apply stash.patch` 
 
 # discard file/repo changes
 # (with no args acts on entire repo)
 gch() {
   if (( $# < 1 )); then
-    git reset --hard
+    #git reset --hard
+	echo Not supported to wipe an entire directory, use gs \(git stash\) instead
   else
     git checkout HEAD -- $@
   fi
@@ -152,10 +194,39 @@ grbp() {
 
 ############# General Purpose Functions: #############
 
+# verified to work 6/10/22
+swap() {
+	if [ $# -lt 2 ]; then 
+		echo ERROR: you must pass 2 fn args to swap!
+		return 1
+	fi
+		
+	tmp_fn="$1-$RANDOM"
+    mv "$1" "$tmp_fn"
+    mv "$2" "$1"
+    mv "$tmp_fn" "$2"
+    echo Swapped: "$1 <==> $2"
+}
+
+
+# NOTE: this workaround causes its own special case bug..., reverting to simpler version...
+#log() {
+#    # Before there were special cases where log would pass ITS OWN positional
+#    # arguments as the positional arguments to a script it would run 
+#    # (e.g. when no actual positional args were passed).
+#    all_args="$@" # NOTE: this still passes correct positional arguments fine
+#    echo $all_args
+#    set -- # removes all positional arguments
+#
+#    # braces allow for piping of same output to multiple files
+#    { $all_args 2> >(tee .err.log); } &> >(tee .out.log);
+#    echo; echo logged output to .err.log \& .out.log respectively;
+#}
+
 # logs command output!
 log() {
     # braces allow for piping of same output to multiple files
-    { $@ 2> >(tee .err.log); } &> >(tee .out.log);
+    { "$@" 2> >(tee .err.log); } &> >(tee .out.log);
     echo; echo logged output to .err.log \& .out.log respectively;
 }
 
@@ -165,7 +236,7 @@ zd() { # zip dir
 
 # verified to work 10/19/18
 mv-ln() {
-	if (( $# < 2 )); then
+	if (( $# != 2 )); then
 		echo "usage: > mv-ln source destination"
 		echo "moves something and links old path to destination"
 		return 1

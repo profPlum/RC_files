@@ -1,0 +1,7 @@
+report_errors: true
+auto_activate_base: false
+channels:
+  - conda-forge
+  - defaults
+channel_priority: strict
+pip_interop_enabled: true
