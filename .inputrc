@@ -7,6 +7,10 @@
 # NOTE: \ef mapping to forward is likely Mac specific
 "\eb": backward-word
 "\ef": forward-word
+
+## TODO: fix this so it does shift+right --> end of line, shift+left --> beginning of line
+#"\e[1;2C": end-of-line
+#"\e[1;2D": beginning-of-line
 #"\e[1;2D": backward-select
 
 # for nix?
