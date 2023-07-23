@@ -10,6 +10,8 @@ map f w
 map <C-A> <Home>
 map <C-E> <End>
 
+" automatically fold based on syntax/language being used!
+set foldmethod=indent "syntax
 set hlsearch
 " highlight search
 

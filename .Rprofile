@@ -1,3 +1,7 @@
+# This is designed to simply remove all existing data variables from the enviroment (i.e. "clear the cache")
+# all.names determines whether to also clear hidden variables (T by default but this can spare some variables)
+rm_all_data = function(all.names=T) rm(list=setdiff(ls(all.names = all.names), lsf.str(all.names = all.names)))
+
 commandArgs=function(trailingOnly=T) base::commandArgs(trailingOnly=trailingOnly)
 
 object.size.pretty = function(obj) format(object.size(obj), units='auto')
@@ -75,7 +79,7 @@ fit_linear_transform = function(X_df, Y_df) {
 
 # NOTE: set avg=F to look at more detailed error analysis
 # NOTE: uses linear models for R^2
-get_explained_var = function(X_df, Y_df, avg=T) {
+get_explained_var = function(X_df, Y_df, avg=T, show_plot=T) {
   library(tidyr, purrr)
   # as_vector(Y_df[,.x]) is really important because R doesn't allow prediction of more than 1 variable
   # (so it only accepts vectors as Y's in the formulae)
@@ -83,6 +87,7 @@ get_explained_var = function(X_df, Y_df, avg=T) {
     purrr::map(~summary(lm(as_vector(Y_df[,.x])~., data=as_tibble(X_df)))) %>%
     purrr::map_dbl('r.squared')
   names(x)=colnames(Y_df)
+  if (show_plot) dotchart(x, main='R^2 of Y_df~X_df (using lm())')
   if (avg) x=mean(x, na.rm=T) # why does R^2 get NaNs??
   return(x)
 }
@@ -96,12 +101,12 @@ get_cummulative_variance = function(X_df, Y_df) {
   order = NULL
   for (i in 1:ncol(X_df)) {
     new_explained_var = remaining_options %>% purrr::map(~X_df[,c(order,.x)]) %>%
-      purrr::map_dbl(~get_explained_var(.x, Y_df))
+      purrr::map_dbl(~get_explained_var(.x, Y_df, show_plot=F))
     next_best_i = which.max(new_explained_var) # index into remaining_options
     order = c(order, remaining_options[[next_best_i]])
     remaining_options = remaining_options[-next_best_i]
   }
   
   X_df = X_df[,order]
-  1:ncol(X_df) %>% purrr::map(~X_df[,1:.x]) %>% purrr::map_dbl(~get_explained_var(.x, Y_df))
+  1:ncol(X_df) %>% purrr::map(~X_df[,1:.x]) %>% purrr::map_dbl(~get_explained_var(.x, Y_df, show_plot=F))
 }
