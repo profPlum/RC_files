@@ -13,21 +13,43 @@ alias host='hostname'
 alias watch='watch -n 1' # this checks status, which never takes too much cpu
 alias cp='cp -r'
 alias scp='scp -r' # usually if you're scping a directory you should zip first...
-alias ls='ls -ltrh' # sort results with most recently modified first!
+alias rsync='rsync -r --update --compress --progress' # rsync seems to be better than scp, and it works without compression
+alias ls='ls -ltrh --color=yes' # sort results with most recently modified first!
 alias lsz='du -hs * .??*' # gives you accurate measurements of size for **local directories** (& files), ls only does files
 alias grep='grep -n'
 alias ln='ln -s' # symbolic links are best, that's *why* they can point to dirs
 alias ssh='ssh -q'
 alias vi='vim'
+unalias cd 2> /dev/null
 cdv() { cd "$1"; ls; }
 alias cd='cdv'
+alias unexpand='unexpand -t 4'
+alias expand='expand -t 4'
+alias tail='tail -n 30'
+alias head='head -n 30'
 # NOTE: not an alias but remember: `killall` over~ `pkill -9`
+
+# simplify tar to zip/unzip interface
+tar-zd() {
+    if ! [[ -d "$1" ]]; then
+        echo Requires directory argument! >&2
+        return 1
+    fi
+    tar -cvaf "$1".tar.gz "$1"/*
+}
+tar-unzip() {
+    if ! [[ "$1" =~ .*\.tar\.gz ]]; then
+        echo Requires *.tar.gz file! >&2
+        return 1
+    fi
+    tar -xvf "$1"
+}
 
 ##################### Anaconda/Pip: #####################
 
-## use drop-in replacement when appropriate!
-#echo warning: will alias conda=mamba if mamba exists
-#[ $(which mamba) ] && alias conda='mamba'
+# use drop-in replacement when appropriate!
+echo warning: will alias conda=mamba if mamba exists >&2
+[ $(which mamba) ] && alias conda='mamba'
 
 alias ci='conda install'
 alias cui='conda uninstall'
@@ -131,23 +153,38 @@ grbp() {
 
 ############# General Purpose & Unique Commands: #############
 ##############################################################
-stop() {
-    echo '############################ NOTE: ##################################'
-    echo It seems impossible to make a true "stop command" \(all your options failed\),
-    echo instead do this: type "return 0 || exit 0" in your script.
-    echo Or for even more simplicity consider just using "return 0",
-    echo since usually that will work \(in just about all cases except mpirun\).
-    echo '#####################################################################'
-    sleep 300
+#stop() {
+#    echo '############################ NOTE: ##################################'
+#    echo It seems impossible to make a true "stop command" \(all your options failed\),
+#    echo instead do this: type "return 0 || exit 0" in your script.
+#    echo Or for even more simplicity consider just using "return 0",
+#    echo since usually that will work \(in just about all cases except mpirun\).
+#    echo '#####################################################################'
+#    sleep 300
+#}
+
+alias stop='return 0 || exit 0'
+assert() { # requires subshell execution!
+    eval [[ "$@" ]] && exit 2
 }
 
+export -f assert
 
 # NOTE: where $1 is the real file name, and $2 is the id from the url
 download_drive_file_by_id() { wget --no-check-certificate "https://drive.google.com/uc?authuser=0&id=$2&export=download&confirm=yes" -O $1; }
 under_score_name() { name=$(echo "$1" | tr ' ' '_'); mv "$1" $name; }
 
 # verified to work 6/9/22, NOTE: replaces all occurrences of $2 with $3 in folder: $1
-repl_strs_in_dir() { /usr/bin/find "$1" -type f | xargs sed -i  "s|$2|$3|g"; }
+repl_strs_in_dir() { /usr/bin/find "$1" -type f | xargs sed -i'' "s|$2|$3|g"; }
+repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
+    cmd="s|$1|$2|g"
+    shift; shift
+    sed -i'' "$cmd" $@ #TODO: maybe add backup suffix?
+    # NOTE: using sed -i'' is most general/compatible way to use sed across mac & linux
+}
+sd() { # simplified sed, takes $1 as pattern & $2 as replace
+    xargs -0 echo | sed "s|$1|$2|g"
+}
 
 
 # NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3
@@ -164,6 +201,7 @@ amap() { # asynchronous version of map!
     cmd="$mpirun_cmd $1"; shift; for x in "$@"; do eval "$cmd $x" & done
 } # NOTE: we used to put the for loop in a subshell why is that?? is it still important?
 
+export -f amap map map_tuple
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example amap usage (1-node usage):
@@ -190,7 +228,8 @@ zd() { zip -r "$1".zip "$1"; } # zip dir
 # request interactive slurm shell
 # -N := num nodes, -n := num cores
 slurm-ishell() { srun $@ --pty bash; }
-alias swatch-me='watch squeue -u $USER' # slurm watch me
+alias swatch-me="watch \"squeue --me --format='%.10i %.9P %.30j %.8T %.10M %.9l %.6D %R'\""
+# slurm watch me + better formatting (tested better formatting on CCR 10/11/23)
 
 # logs command output!
 log() {
