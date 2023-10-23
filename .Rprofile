@@ -28,8 +28,27 @@ RPD = function(Yp, Yt) mean(abs(Yp-Yt)/((abs(Yp)+abs(Yt))/2), na.rm=T) # Verifie
 MAPE = function(Yp, Yt) mean(abs(Yp-Yt)/abs(Yt), na.rm=T)
 # NOTE: MAPE doesn't actually give a percent, it's just 0-1
 
+###################### glmnet helpers ######################
+# TODO: delete & use h2o once they fix intercept=F bug
+
+glmnet_R2 = function(glmnet_cv_out, s='lambda.1se') {
+  ids = list(lambda.min=glmnet_cv_out$index[[1]], lambda.1se=glmnet_cv_out$index[[2]])
+  R_Squared_train = glmnet_cv_out$glmnet.fit$dev.ratio[[ ids[[s]] ]]
+  return(R_Squared_train)
+}
+
+# returns coefs as named vector (like we expect)
+coef.cv.glmnet = function(cv, s='lambda.1se', ...) {
+  lm_coefs_raw = glmnet::coef.glmnet(cv, s=s, ...)
+  lm_coefs = as.vector(lm_coefs_raw)
+  names(lm_coefs) = gsub('`', '', rownames(lm_coefs_raw))
+  return(lm_coefs) # gsub prevents unsual names from breaking things...
+}
+
 glmnet=function(formula, data) #TODO: figure out corresponding method for predict() which can reuse formula + new df flexibly
-  glmnet::cv.glmnet(as.matrix(model.frame(formula, data=data)), y=data[[ all.vars(formula)[[1]] ]])
+  glmnet::cv.glmnet(as.matrix(model.matrix(formula, data=data)), y=data[[ all.vars(formula)[[1]] ]], intercept=F)
+# if user requests it intercept will implicitly be included by formula
+#####################################################################
 
 write.csv=function(df, file, ...) utils::write.csv(df, file=if (grepl('.*\\.gz',file)) gzfile(file) else file, ...)
 
@@ -80,15 +99,20 @@ barplot = function(...) { # better option: use dotchart!!
 # sets default barplot configuration to have horizontal bar names (to accomodate longer names)
 
 # requires quosure response!! (e.g. parallel_coordinate_response())
-parallel_coordinate_response = function(plot_data, response, title=NULL) {
+parallel_coordinate_response = function(plot_data, response, 
+                                        title='Parallel Coords', alpha=0.1, scale=F) {
   library(tidyverse)
   stopifnot('quosure' %in% class(response))
+  if (scale) {
+    plot_data = plot_data %>% mutate_at(vars(-!!response), base::scale)
+    title=paste0(title, ' (Scaled)')
+  }
   plot_data %>% arrange(!!response) %>% select_if(~sd(.x)>0) %>% mutate(id_=1:n()) %>%
     pivot_longer(c(-!!response,-id_)) %>%
-    ggplot(aes(name, value, color=!!response, group = id_)) +
-    geom_point() + geom_line() + theme(axis.text.x=element_text(angle=45)) + ggtitle(title)
+    ggplot(aes(name, value, color=!!response, group = id_), alpha=alpha) +
+    geom_point() + geom_line() + theme(axis.text.x=element_text(angle=45)) + ggtitle(title) +
+    ylab(ifelse(scale, 'value (scaled)', 'value'))
 }
-
 
 # Everything is verified except whether it is ok to ignore bias: 8/2/22
 fit_linear_transform = function(X_df, Y_df) {
@@ -98,7 +122,10 @@ fit_linear_transform = function(X_df, Y_df) {
 
   rotation_matrix = NULL
   for (j in 1:ncol(Y_df)) {
-    model = lm(Y_df[,j]~.-1,data=X_df) # TODO: verify that it is ok to ignore bias here?
+    # TODO: verify that it is ok to ignore bias here?
+    model = lm(as.matrix(Y_df)[,j]~.-1, data=X_df) 
+ 
+    print(summary(model))
     rotation_matrix = cbind(rotation_matrix, coef(model))
   }
   colnames(rotation_matrix) = colnames(Y_df)
@@ -109,25 +136,6 @@ fit_linear_transform = function(X_df, Y_df) {
 
   return(rotation_matrix)
 }
-## Everything is verified except whether it is ok to ignore bias: 8/2/22
-#fit_linear_transform = function(X_df, Y_df) {
-#  # verified to work 8/2/22 (checks that data frames are all numeric)
-#  stopifnot(all(Vectorize(is.numeric)(X_df)))
-#  stopifnot(all(Vectorize(is.numeric)(Y_df)))
-#
-#  rotation_matrix = NULL
-#  for (j in 1:ncol(Y_df)) {
-#    model = lm(Y_df[,j]~.-1,data=X_df) # TODO: verify that it is ok to ignore bias here?
-#    rotation_matrix = cbind(rotation_matrix, coef(model))
-#  }
-#  colnames(rotation_matrix) = colnames(Y_df)
-#
-#  # print R^2 of entire rotation matrix
-#  R2 = 1-sum(apply((as.matrix(X_df)%*%rotation_matrix-Y_df)**2, -1, mean)/apply(Y_df, -1, var))
-#  cat('R2 of linear transform fit: ', R2)
-#
-#  return(rotation_matrix)
-#}
 
 # NOTE: builtin R^2 is working apparently!! https://stackoverflow.com/questions/74368804/why-does-h2o-r2-not-match-manually-computed-r2/76995212#76995212
 get_explained_var_H2O = function(X_df, Y_df, max_models = 15, max_runtime_secs=3*60) {
