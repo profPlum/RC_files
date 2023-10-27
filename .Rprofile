@@ -6,6 +6,11 @@ plot.prcomp = function(PCA) {
     plot(cummulative_R2, main='Cummulative R2 vs Number of PCs')
 }
 
+# TODO: consider if this is a good idea or mnemonic to simply use negative margin with apply is better?
+# The dream apply which sets negative MARGINS to mimic numpy axis behavior!
+# (sweep does this already without modifications)
+np.apply = function(X, axis, FUN, ...) apply(X, MARGIN=-axis, FUN, ...)
+
 # distinct() is a blazing fast alternative to unique on dataframes!! (i.e. real time vs 3 seconds)
 # now it has been transparently added as a backend for unique() when called on dataframes
 # (so you don't need to memorize a new command & your code will be more portable!)
