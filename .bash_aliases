@@ -264,23 +264,23 @@ rep0() {
 }
 
 # simple tool much like in R
-# e.g. `map rand_float_perm $(rep 1000 2)`,
+# e.g. `map rand_float_perturb $(rep 1000 2)`,
 # echo $(rep 5 "'1 2 3'") --> '1 2 3' '1 2 3'...
 rep() {
     N=$1; shift;
     rep0 $N "'$@' "
 }
 
-############## CLI arg perm: ##############
-# NOTE: This is a bash adaptation of rand_CLI_arg_perm.py.
+############## CLI arg perturb: ##############
+# NOTE: This is a bash adaptation of rand_CLI_arg_perturb.py.
 # Idea is to use on python CLI call for rand Hparam search on HPC.
 # Then use some other logging functionality + R to find best Hparams.
 
-# Idea is to use on python CLI e.g.
-# "... --some-arg=$(rand_float_perm default_value) ..."
-# Verified to work with ks.test on 10/30/23
+# Adds slight pertubation to numeric CLI arg e.g.
+# "... --some-hparam=$(rand_numeric_perturb 3.14) ..."
+# Verified to work on 10/30/23 (with ks.test & old/new systems)
 NUM_PERM_SPREAD=0.3
-rand_numeric_perm() {
+rand_numeric_perturb() {
     N=10000 # granularity of random coefficient
     scale="scale=16;" # precision of floating point ops
     min=$(echo "$scale l($1)*(1-$NUM_PERM_SPREAD)" | bc -l)
@@ -304,26 +304,24 @@ rand_factor_sample() {
     echo ${factor_array[$sample_id]}
 }
 
-# idea is to use on python CLI, but less useful flexible than rand_factor_sample
-alias rand_bool='rand_factor_sample True False'
-
-# verified to work 10/31/23
+# Verified to work 10/31/23
+# Automatically perturbs given (valid) CLI args, e.g. for Hparam search!
 # IMPORTANT: works on everything EXCEPT abitrary categorial arugments,
 # those must be handled manually with rand_factor_sample() (above)
-auto_cli_perm() {
-    auto_numeric_perm() { sed -r 's/(--[A-z0-9-]+)[ =]([0-9.]+)/\1="$(rand_numeric_perm \2)"/g'; }
-    _auto_flag_perm() { sed -r 's/(--[A-z0-9-]+)( --|$)/"$(rand_factor_sample \1)"\2/g'; }
-    auto_flag_perm() { _auto_flag_perm | _auto_flag_perm; } # We x2 apply auto_flag_perm b/c regex doesn't allow overlapping matches!!
-    auto_bool_perm() { sed -r 's/(True|False)/"$(rand_factor_sample True False)"/g'; }
-    permed_cli=$(echo "$@" | auto_numeric_perm | auto_flag_perm | auto_bool_perm)
-    permed_cli="$(eval echo \"$permed_cli\")" # verified to handle string properly!! 10/31/23
+auto_cli_perturb() {
+    auto_numeric_perturb() { sed -r 's/(--[A-z0-9-]+)[ =]([0-9.]+)/\1="$(rand_numeric_perturb \2)"/g'; }
+    _auto_flag_perturb() { sed -r 's/(--[A-z0-9-]+)( --|$)/"$(rand_factor_sample \1)"\2/g'; }
+    auto_flag_perturb() { _auto_flag_perturb | _auto_flag_perturb; } # We x2 apply auto_flag_perturb b/c regex doesn't allow overlapping matches!!
+    auto_bool_perturb() { sed -r 's/(True|False)/"$(rand_factor_sample True False)"/g'; }
+    perturbed_cli=$(echo "$@" | auto_numeric_perturb | auto_flag_perturb | auto_bool_perturb)
+    perturbed_cli="$(eval echo \"$perturbed_cli\")" # verified to handle string properly!! 10/31/23
     echo prev CLI args: "$@" >&2
-    echo new CLI args: "$permed_cli" >&2
-    echo "$permed_cli"
+    echo new CLI args: "$perturbed_cli" >&2
+    echo "$perturbed_cli"
 }
 
 # Important for subshells/job scripts!
-export -f auto_cli_perm rand_factor_sample
+export -f auto_cli_perturb rand_factor_sample
 
 ################ Deprecated: ################
 
