@@ -27,6 +27,10 @@ alias unexpand='unexpand -t 4'
 alias expand='expand -t 4'
 alias tail='tail -n 30'
 alias head='head -n 30'
+N_CPUs="$(getconf _NPROCESSORS_ONLN)" # gets number of cpus on mac & linux!
+alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # IMPORTANT: xargs is better than amap & map! 
+# ^ NOTE: -n1 means 1 arg per new call (quote aware), -PN means use N parallel processes,
+# also you can override any defaults just by specifying them again!
 # NOTE: not an alias but remember: `killall` over~ `pkill -9`
 
 # simplify tar to zip/unzip interface
@@ -153,21 +157,9 @@ grbp() {
 
 ############# General Purpose & Unique Commands: #############
 ##############################################################
-#stop() {
-#    echo '############################ NOTE: ##################################'
-#    echo It seems impossible to make a true "stop command" \(all your options failed\),
-#    echo instead do this: type "return 0 || exit 0" in your script.
-#    echo Or for even more simplicity consider just using "return 0",
-#    echo since usually that will work \(in just about all cases except mpirun\).
-#    echo '#####################################################################'
-#    sleep 300
-#}
 
 alias stop='return 0 || exit 0'
-assert() { # requires subshell execution!
-    eval [[ "$@" ]] && exit 2
-}
-
+assert() { eval [[ "$@" ]] && echo Assert is False!! : "$@" && exit 2; } # requires subshell execution!
 export -f assert
 
 # NOTE: where $1 is the real file name, and $2 is the id from the url
@@ -182,26 +174,12 @@ repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
     sed -i'' "$cmd" $@ #TODO: maybe add backup suffix?
     # NOTE: using sed -i'' is most general/compatible way to use sed across mac & linux
 }
-sd() { # simplified sed, takes $1 as pattern & $2 as replace
-    xargs -0 echo | sed "s|$1|$2|g"
-}
 
+# simplified sed, takes $1 as pattern & $2 as replace
+sd() { xargs -0 echo | sed "s|$1|$2|g"; }
 
-# NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3
-map() { cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done }
-map_tuple() { eval map "$@"; } # experimental version of map that should be able to handle quoted arg-tuples, e.g.: map_tuple echo "1 2" "3 4" --> (matrix) "1 2"\n"3 4"
-# map_tuple idea taken from here (they claim its dangerous): https://superuser.com/questions/1529226/get-bash-to-respect-quotes-when-word-splitting-subshell-output#
-# TODO: if it works add asynchronous version!
-
-amap() { # asynchronous version of map!
-    #cmd="$1"; shift; (for x in "$@"; do eval "$cmd $x" & done)
-    echo "mpirun_cmd: $mpirun_cmd"
-    echo "mpirun_cmd can be e.g. srun -n 1 (slurm multi-node execution), or empty (default 1 node execution)"
-    echo ALSO, recall: a common use case is to 'wait' after this call, for all processes to finish
-    cmd="$mpirun_cmd $1"; shift; for x in "$@"; do eval "$cmd $x" & done
-} # NOTE: we used to put the for loop in a subshell why is that?? is it still important?
-
-export -f amap map map_tuple
+map() { echo deprecated now for xargs >&2; return 1; }
+amap() { echo deprecated now for xargs >&2; return 1; }
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example amap usage (1-node usage):
@@ -209,10 +187,7 @@ export -f amap map map_tuple
 # Example amap multi-node usage (on slurm):
 # mpirun_cmd='srun -n 1' amap echo 1 2 3
 
-mb() { # mb=make backup! (moves original file)
-    #mv "$1" "${1%.*}.bak$RANDOM.${1##*.}"
-    mv "$1" "${1}.${RANDOM}.bak"
-}
+mb() { mv "$1" "${1}.${RANDOM}.bak"; } # mb=make backup! (moves original file)
 
 alias rld='. ~/.bashrc'
 alias pdb='python -m pdb'
@@ -240,11 +215,11 @@ log() {
 
 # verified to work 6/10/22
 swap() {
-	if [ $# -lt 2 ]; then 
-		echo ERROR: you must pass 2 fn args to swap!
-		return 1
-	fi	
-	tmp_fn="$1-$RANDOM"
+    if [ $# -lt 2 ]; then
+        echo ERROR: you must pass 2 fn args to swap!
+        return 1
+    fi
+    tmp_fn="$1-$RANDOM"
     mv "$1" "$tmp_fn"
     mv "$2" "$1"
     mv "$tmp_fn" "$2"
@@ -253,18 +228,18 @@ swap() {
 
 # verified to work 10/19/18
 mv-ln() {
-	if (( $# != 2 )); then
-		echo "usage: > mv-ln source destination"
-		echo "moves something and links old path to destination"
-		return 1
-	fi
-	if [ -d "$2" ]; then
-		ARG2="$2"/$(basename "$1")
-	else
-		ARG2="$2"
-	fi
-	echo "moving \"$1\" to \"$2\""
-	mv "$1" "$ARG2"
+    if (( $# != 2 )); then
+        echo "usage: > mv-ln source destination"
+        echo "moves something and links old path to destination"
+        return 1
+    fi
+    if [ -d "$2" ]; then
+        ARG2="$2"/$(basename "$1")
+    else
+        ARG2="$2"
+    fi
+    echo "moving \"$1\" to \"$2\""
+    mv "$1" "$ARG2"
     /bin/ln -s "$ARG2" "$1"
 }
 
@@ -276,8 +251,104 @@ get_access_date() {
 
 under_score_name() { name=$(echo "$1" | tr ' ' '_'); mv "$1" $name; }
 
+# simple tool much like in R
+# but 0 padding between repeats,
+# e.g. `echo rep 50 =` --> =======...
+rep0() {
+    i=0; N=$1; shift
+    output=
+    while ((i++ < N)); do
+        output="$output""$@"
+    done
+    echo "$output"
+}
+
+# simple tool much like in R
+# e.g. `map rand_float_perm $(rep 1000 2)`,
+# echo $(rep 5 "'1 2 3'") --> '1 2 3' '1 2 3'...
+rep() {
+    N=$1; shift;
+    rep0 $N "'$@' "
+}
+
+############## CLI arg perm: ##############
+# NOTE: This is a bash adaptation of rand_CLI_arg_perm.py.
+# Idea is to use on python CLI call for rand Hparam search on HPC.
+# Then use some other logging functionality + R to find best Hparams.
+
+# Idea is to use on python CLI e.g.
+# "... --some-arg=$(rand_float_perm default_value) ..."
+# Verified to work with ks.test on 10/30/23
+NUM_PERM_SPREAD=0.3
+rand_numeric_perm() {
+    N=10000 # granularity of random coefficient
+    scale="scale=16;" # precision of floating point ops
+    min=$(echo "$scale l($1)*(1-$NUM_PERM_SPREAD)" | bc -l)
+    max=$(echo "$scale l($1)*(1+$NUM_PERM_SPREAD)" | bc -l)
+    runif="($((RANDOM % N))/$N)"
+    bc_cmd="$scale e(($max - $min) * $runif + $min)"
+    float=$(echo "$bc_cmd" | bc -l)
+ 
+    # truncate to int if needed
+    ! [[ "$1" =~ \. ]] && float="${float%%.*}"
+    echo $float
+}
+
+# Very useful for True/False & various other categorical args
+# e.g. cmd --env=$(rand_factor_sample $env_names), or
+# $(rand_factor_sample --enable-flag) --> --enable-flag or nothing!
+rand_factor_sample() {
+    N=$#; (( $# < 2 && N++ ))
+    factor_array=( "$@" )
+    sample_id=$(($RANDOM % $N))
+    echo ${factor_array[$sample_id]}
+}
+
+# idea is to use on python CLI, but less useful flexible than rand_factor_sample
+alias rand_bool='rand_factor_sample True False'
+
+# verified to work 10/31/23
+# IMPORTANT: works on everything EXCEPT abitrary categorial arugments,
+# those must be handled manually with rand_factor_sample() (above)
+auto_cli_perm() {
+    auto_numeric_perm() { sed -r 's/(--[A-z0-9-]+)[ =]([0-9.]+)/\1="$(rand_numeric_perm \2)"/g'; }
+    _auto_flag_perm() { sed -r 's/(--[A-z0-9-]+)( --|$)/"$(rand_factor_sample \1)"\2/g'; }
+    auto_flag_perm() { _auto_flag_perm | _auto_flag_perm; } # We x2 apply auto_flag_perm b/c regex doesn't allow overlapping matches!!
+    auto_bool_perm() { sed -r 's/(True|False)/"$(rand_factor_sample True False)"/g'; }
+    permed_cli=$(echo "$@" | auto_numeric_perm | auto_flag_perm | auto_bool_perm)
+    permed_cli="$(eval echo \"$permed_cli\")" # verified to handle string properly!! 10/31/23
+    echo prev CLI args: "$@" >&2
+    echo new CLI args: "$permed_cli" >&2
+    echo "$permed_cli"
+}
 
 ################ Deprecated: ################
+
+#stop() {
+#    echo '############################ NOTE: ##################################'
+#    echo It seems impossible to make a true "stop command" \(all your options failed\),
+#    echo instead do this: type "return 0 || exit 0" in your script.
+#    echo Or for even more simplicity consider just using "return 0",
+#    echo since usually that will work \(in just about all cases except mpirun\).
+#    echo '#####################################################################'
+#    sleep 300
+#}
+
+## NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3 
+#map_() { cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done; }
+#map_tuple() { eval map_ "$@"; } # experimental version of map that should be able to inline subshell expansion e.g.: map_tuple echo $(rep 2 '1 2') --> (matrix) "1 2"\n"1 2"
+#map() { map_tuple "$@" } # map_tuple idea taken from here (they claim its dangerous): https://superuser.com/questions/1529226/get-bash-to-respect-quotes-when-word-splitting-subshell-output#
+##  TODO: if it works add asynchronous version!
+
+
+#amap() { # asynchronous version of map!
+#    echo "MPIRUN_CMD: $MPIRUN_CMD"
+#    echo "MPIRUN_CMD can be e.g. 'srun -n 1' (slurm multi-node execution), or '' (empty, default 1 node execution)"
+#    echo ALSO, recall: a common use case is to 'wait' after this call, for all processes to finish
+#    cmd="$MPIRUN_CMD $1"; shift; for x in "$@"; do eval "$cmd $x" & done
+#} # NOTE: we used to put the for loop in a subshell why is that?? is it still important?
+
+#export -f amap map map_tuple
 
 #STOP="eval 'return 0 || exit 0'"
 #export STOP
