@@ -76,6 +76,7 @@ alias pud='pip install --upgrade pip' # pip up-date
 git config --global rerere.enabled 1
 git config --global rerere.autoupdate true
 [ $(which vim) ] && git config --global core.editor "vim"
+git config core.filemode false # prevents "file mode changes" from clogging git status
 
 alias gf='git fetch'
 alias grb='git rebase'
