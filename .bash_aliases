@@ -279,12 +279,12 @@ rep() {
 # Adds slight pertubation to numeric CLI arg e.g.
 # "... --some-hparam=$(rand_numeric_perturb 3.14) ..."
 # Verified to work on 10/30/23 (with ks.test & old/new systems)
-NUM_PERM_SPREAD=0.3
+NUM_PERTURB_SPREAD=0.3 # Very nice property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1
 rand_numeric_perturb() {
     N=10000 # granularity of random coefficient
     scale="scale=16;" # precision of floating point ops
-    min=$(echo "$scale l($1)*(1-$NUM_PERM_SPREAD)" | bc -l)
-    max=$(echo "$scale l($1)*(1+$NUM_PERM_SPREAD)" | bc -l)
+    min=$(echo "$scale l($1)*(1-$NUM_PERTURB_SPREAD)" | bc -l)
+    max=$(echo "$scale l($1)*(1+$NUM_PERTURB_SPREAD)" | bc -l)
     runif="($((RANDOM % N))/$N)"
     bc_cmd="$scale e(($max - $min) * $runif + $min)"
     float=$(echo "$bc_cmd" | bc -l)
@@ -292,7 +292,7 @@ rand_numeric_perturb() {
     # truncate to int if needed
     ! [[ "$1" =~ \. ]] && float="${float%%.*}"
     echo $float
-}
+} # P.S. NOTE: final form of perturbed arg is arg^(NUM_PERTURB_SPREAD*(2*(R~U(0,1))-1)+1)
 
 # Very useful for True/False & various other categorical args
 # e.g. cmd --env=$(rand_factor_sample $env_names), or
@@ -318,7 +318,7 @@ auto_cli_perturb() {
     echo prev CLI args: "$@" >&2
     echo new CLI args: "$perturbed_cli" >&2
     echo "$perturbed_cli"
-}
+} # P.S. Very nice property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1 
 
 # Important for subshells/job scripts!
 export -f auto_cli_perturb rand_factor_sample
