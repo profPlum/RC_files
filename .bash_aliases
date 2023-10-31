@@ -322,6 +322,9 @@ auto_cli_perm() {
     echo "$permed_cli"
 }
 
+# Important for subshells/job scripts!
+export -f auto_cli_perm rand_factor_sample
+
 ################ Deprecated: ################
 
 #stop() {
