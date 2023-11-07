@@ -179,8 +179,8 @@ repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
 # simplified sed, takes $1 as pattern & $2 as replace
 sd() { xargs -0 echo | sed "s|$1|$2|g"; }
 
-map() { echo deprecated now for xargs >&2; return 1; }
-amap() { echo deprecated now for xargs >&2; return 1; }
+map() { echo map is deprecated now for xargs >&2; return 1; }
+amap() { echo amap is deprecated now for xargs >&2; return 1; }
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example amap usage (1-node usage):
@@ -204,7 +204,7 @@ zd() { zip -r "$1".zip "$1"; } # zip dir
 # request interactive slurm shell
 # -N := num nodes, -n := num cores
 slurm-ishell() { srun $@ --pty bash; }
-alias swatch-me="watch \"squeue --me --format='%.10i %.9P %.30j %.8T %.10M %.9l %.6D %R'\""
+alias swatch-me="watch \"squeue --me --format='%.10i %.9P %.30j %.8T %.10M %.9l %.6D %.18R'\""
 # slurm watch me + better formatting (tested better formatting on CCR 10/11/23)
 
 # logs command output!
@@ -265,7 +265,7 @@ rep0() {
 }
 
 # simple tool much like in R
-# e.g. `map rand_float_perturb $(rep 1000 2)`,
+# e.g. `map rand_numeric_perturb $(rep 1000 2)`,
 # echo $(rep 5 "'1 2 3'") --> '1 2 3' '1 2 3'...
 rep() {
     N=$1; shift;
@@ -280,19 +280,19 @@ rep() {
 # Adds slight pertubation to numeric CLI arg e.g.
 # "... --some-hparam=$(rand_numeric_perturb 3.14) ..."
 # Verified to work on 10/30/23 (with ks.test & old/new systems)
-NUM_PERTURB_SPREAD=0.3 # Very nice property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1
+NUM_PERTURB_SPREAD=0.3 # Awesome property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1
 rand_numeric_perturb() {
-    N=10000 # granularity of random coefficient
+    N=4096 # granularity of random coefficient
     scale="scale=16;" # precision of floating point ops
     min=$(echo "$scale l($1)*(1-$NUM_PERTURB_SPREAD)" | bc -l)
     max=$(echo "$scale l($1)*(1+$NUM_PERTURB_SPREAD)" | bc -l)
-    runif="($((RANDOM % N))/$N)"
+    runif="($((RANDOM % N))/$N)" # random coefficient between 0 & 1
     bc_cmd="$scale e(($max - $min) * $runif + $min)"
-    float=$(echo "$bc_cmd" | bc -l)
+    perturbed_number=$(echo "$bc_cmd" | bc -l)
  
-    # truncate to int if needed
-    ! [[ "$1" =~ \. ]] && float="${float%%.*}"
-    echo $float
+    # truncate to int if original argument is also an int
+    ! [[ "$1" =~ \. ]] && perturbed_number="${perturbed_number%%.*}"
+    echo $perturbed_number
 } # P.S. NOTE: final form of perturbed arg is arg^(NUM_PERTURB_SPREAD*(2*(R~U(0,1))-1)+1)
 
 # Very useful for True/False & various other categorical args
@@ -322,7 +322,7 @@ auto_cli_perturb() {
 } # P.S. Very nice property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1 
 
 # Important for subshells/job scripts!
-export -f auto_cli_perturb rand_factor_sample
+export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
 
 ################ Deprecated: ################
 
