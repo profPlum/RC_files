@@ -5,6 +5,8 @@
 ##### path additions needed for all .bashrc files. #####
 
 ##################### Redefinitions: #########################
+
+# NOTE: not an alias but remember: `killall` over~ `pkill -9`
 # v Can't follow links rn, it would need to be `find $@ . -name $1`
 alias find='find . -name'
 alias clr='clear'
@@ -16,7 +18,7 @@ alias scp='scp -r' # usually if you're scping a directory you should zip first..
 alias rsync='rsync -r --update --compress --progress' # rsync seems to be better than scp, and it works without compression
 alias ls='ls -ltrh --color=yes' # sort results with most recently modified first!
 alias lsz='du -hs * .??*' # gives you accurate measurements of size for **local directories** (& files), ls only does files
-alias grep='grep -n'
+alias grep='grep -niP'
 alias ln='ln -s' # symbolic links are best, that's *why* they can point to dirs
 alias ssh='ssh -q'
 alias vi='vim'
@@ -31,7 +33,12 @@ N_CPUs="$(getconf _NPROCESSORS_ONLN)" # gets number of cpus on mac & linux!
 alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # IMPORTANT: xargs is better than amap & map! 
 # ^ NOTE: -n1 means 1 arg per new call (quote aware), -PN means use N parallel processes,
 # also you can override any defaults just by specifying them again!
-# NOTE: not an alias but remember: `killall` over~ `pkill -9`
+
+# IMPORTANT: xargs is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
+# Example xargs usage (1-node usage):
+# echo 1 2 3 | xargs -n1 echo (-n1 is optional since baked into alias)
+# Example amap multi-node usage (on slurm):
+# echo 1 2 3 | xargs -n1 srun -n 1 python some_script.py (-n1 is optional since baked into alias)
 
 # simplify tar to zip/unzip interface
 tar-zd() {
@@ -182,11 +189,11 @@ sd() { xargs -0 echo | sed "s|$1|$2|g"; }
 map() { echo map is deprecated now for xargs >&2; return 1; }
 amap() { echo amap is deprecated now for xargs >&2; return 1; }
 
-# IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
-# Example amap usage (1-node usage):
-# amap echo 1 2 3
+# IMPORTANT: xargs is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
+# Example xargs usage (1-node usage):
+# echo 1 2 3 | xargs echo
 # Example amap multi-node usage (on slurm):
-# mpirun_cmd='srun -n 1' amap echo 1 2 3
+# echo 1 2 3 | xargs srun -n 1 python some_script.py
 
 mb() { mv "$1" "${1}.${RANDOM}.bak"; } # mb=make backup! (moves original file)
 
@@ -252,6 +259,21 @@ get_access_date() {
 
 under_score_name() { name=$(echo "$1" | tr ' ' '_'); mv "$1" $name; }
 
+# split input args (string) on characters (e.g. 12 --> 1 2)
+str_split() { echo "$@" | fold -w1 | xargs -n 5000 echo; } 
+str_concat() { echo "$@" | sed -r 's| ||g'; }
+
+# Verified to work: 11/10/23
+# This function builds a regex pattern which matches 
+# integers between 0-$1 (inclusive/exclusive like python range())
+regex_number_range() { x=$(seq $1 $2 | tr '\n' '|'); echo "(${x%%|$2|})"; }
+
+rev() { # like R function, reverses order of arguments
+    for (( i=$#;i>0;i-- )); do
+        echo "${!i}"
+    done
+}
+
 # simple tool much like in R
 # but 0 padding between repeats,
 # e.g. `echo rep 50 =` --> =======...
@@ -263,7 +285,7 @@ rep0() {
     done
     echo "$output"
 }
-
+ 
 # simple tool much like in R
 # e.g. `map rand_numeric_perturb $(rep 1000 2)`,
 # echo $(rep 5 "'1 2 3'") --> '1 2 3' '1 2 3'...
