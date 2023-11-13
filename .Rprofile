@@ -1,3 +1,26 @@
+# Verified to work 11/13/23
+# regular read_csv/read.csv except it caches & instantly reloads duplicates
+if (!exists('read_csv_cached')) {
+  read_csv_cached = function(fn, ...) {
+    fn <- normalizePath(fn)
+    cached_df=attr(read_csv_cached, 'cache')[[fn]]
+    cur_info = file.info(fn)
+    if (!is.null(cached_df) && cached_df$mtime==cur_info$mtime) {
+      return(cached_df$df)
+    } else {
+      # load it
+      if (require(readr)) {
+        df = read_csv(fn, ...)
+      } else {
+        df = read.csv(fn, ...)
+      }
+      attr(read_csv_cached, 'cache')[[fn]] <<- list(df=df, mtime=cur_info$mtime)
+    }
+    return(df)
+  }
+  attr(read_csv_cached, 'cache')=list()
+}
+
 plot.prcomp = function(PCA) {
     if (!summary(PCA)$scale) warning('Unscaled PCA assumes that each variable is in the same units! If that is false this plot will be meaningless.')
     PC_importance = t(summary(PCA)$importance)
@@ -6,7 +29,7 @@ plot.prcomp = function(PCA) {
     plot(cummulative_R2, main='Cummulative R2 vs Number of PCs')
 }
 
-# TODO: consider if this is a good idea or mnemonic to simply use negative margin with apply is better?
+# NOTE: Maybe mnemonic is better: to simply use negative margin with apply (sweep is numpy already)
 # The dream apply which sets negative MARGINS to mimic numpy axis behavior!
 # (sweep does this already without modifications)
 np.apply = function(X, axis, FUN, ...) apply(X, MARGIN=-axis, FUN, ...)
@@ -29,9 +52,9 @@ rm_all_data = function(all.names=T) rm(list=setdiff(ls(all.names = all.names), l
 
 # NOTE: this is like a better relative error! Because it doesn't allow singularities
 # Relative Percentage Difference: https://stats.stackexchange.com/questions/86708/how-to-calculate-relative-error-when-the-true-value-is-zero/86710#86710
-RPD = function(Yp, Yt) mean(abs(Yp-Yt)/((abs(Yp)+abs(Yt))/2), na.rm=T) # Verified to work 8/3/23
-MAPE = function(Yp, Yt) mean(abs(Yp-Yt)/abs(Yt), na.rm=T)
-# NOTE: MAPE doesn't actually give a percent, it's just 0-1
+sMAPE = function(Yp, Yt) mean(abs(Yp-Yt)/((abs(Yp)+abs(Yt))/2), na.rm=T) # Verified to work 8/3/23
+MAPE = function(Yp, Yt) mean(abs(Yp-Yt)/abs(Yt), na.rm=T) # NOTE: MAPE doesn't actually give a percent, it's just 0-1
+R2 = function(Yp, Yt) 1-mean(apply((Yp-Yt)**2, -1, mean, na.rm=T)/apply(Yt, -1, var, na.rm=T), na.rm=T)
 
 ###################### glmnet helpers ######################
 # TODO: delete & use h2o once they fix intercept=F bug
@@ -53,6 +76,35 @@ coef.cv.glmnet = function(cv, s='lambda.1se', ...) {
 glmnet=function(formula, data) #TODO: figure out corresponding method for predict() which can reuse formula + new df flexibly
   glmnet::cv.glmnet(as.matrix(model.matrix(formula, data=data)), y=data[[ all.vars(formula)[[1]] ]], intercept=F)
 # if user requests it intercept will implicitly be included by formula
+
+# Verified to work 11/8/23
+# NOTE: you can pass lm=glm for glm type model! (glm doesn't show R^2 though...)
+fit_significant_lm = function(formula, data, significance_level=0.05,
+                              lm_fit=lm, ...) {
+  # NOTE: this is how you get p_values! 
+  # https://stackoverflow.com/questions/16153497/selecting-the-statistically-significant-variables-in-an-r-glm-model
+  p.vals = function(m) {
+    stopifnot('lm' %in% class(m))
+    return(summary(m)$coeff[-1,4])
+  }
+  
+  # Refine lm's x.vars until only significant predictors remain
+  str_formula = as.character(formula)[-1] # index [1] is the tilde
+  y.var <- str_formula[[1]] # LHS
+  x.vars <- str_formula[[2]] # RHS
+  print(x.vars)
+  sign.lm = lm_fit(formula, data=data, ...)
+  while(max(p.vals(sign.lm))>significance_level) { # while insignificant predictors remain
+    irrelevant.x <- names(p.vals(sign.lm))[which.max(p.vals(sign.lm))]
+    x.vars <- paste0(x.vars, '-', irrelevant.x)
+    print(x.vars)
+    sig.formula <- as.formula(paste(y.var, "~", x.vars))
+    sign.lm = lm_fit(sig.formula, data=data, ...)
+  }
+  print(summary(sign.lm))
+  
+  return(sign.lm)
+}
 #####################################################################
 
 write.csv=function(df, file, ...) utils::write.csv(df, file=if (grepl('.*\\.gz',file)) gzfile(file) else file, ...)
@@ -75,6 +127,7 @@ len=length # python style!
 # fixes base image() function to display the matrix without rotation
 image.real = function(mat, main=NULL, sub=NULL) graphics::image(t(mat)[,nrow(mat):1], main=main, sub=sub)
 image = function(x, scale=F, ...) { # better version of image for labeled axes
+  stopifnot(prod(dim(x))>0)
   if (scale) x <- scale(x) # scale so that image is more readable
   x <- t(x)[,nrow(x):1] # fix base image rotation
   graphics::image(x, axes = FALSE, ...)
