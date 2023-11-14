@@ -133,7 +133,8 @@ gvc() {
 
 # git push new branch (for pushing new branches to origin)
 gpnb() {
-    branch_name=$(git branch | grep \* | cut -d ' ' -f2)
+    branch_name=$(git rev-parse --abbrev-ref HEAD)
+    echo branch name: $branch_name
     git push --set-upstream origin $branch_name
 }
 
