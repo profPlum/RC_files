@@ -30,11 +30,20 @@ alias expand='expand -t 4'
 alias tail='tail -n 30'
 alias head='head -n 30'
 N_CPUs="$(getconf _NPROCESSORS_ONLN)" # gets number of cpus on mac & linux!
-alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # IMPORTANT: xargs is better than amap & map! 
+alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new amap is likely more useful 
 # ^ NOTE: -n1 means 1 arg per new call (quote aware), -PN means use N parallel processes,
 # also you can override any defaults just by specifying them again!
+# GOTCHA: apparently xargs doesn't work by default with bash functions?? Use new amap instead! 
 
-# IMPORTANT: xargs is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
+
+amap() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd in front!
+    [[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
+    export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
+    bash_cmd="$@ "'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
+    xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) -I {} bash -c "$bash_cmd" _ {}
+}
+
+# IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example xargs usage (1-node usage):
 # echo 1 2 3 | xargs -n1 echo (-n1 is optional since baked into alias)
 # Example amap multi-node usage (on slurm):
@@ -187,8 +196,8 @@ repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
 # simplified sed, takes $1 as pattern & $2 as replace
 sd() { xargs -0 echo | sed "s|$1|$2|g"; }
 
-map() { echo map is deprecated now for xargs >&2; return 1; }
-amap() { echo amap is deprecated now for xargs >&2; return 1; }
+#map() { echo map is deprecated now for xargs >&2; return 1; }
+#amap() { echo amap is deprecated now for xargs >&2; return 1; }
 
 # IMPORTANT: xargs is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example xargs usage (1-node usage):
@@ -279,9 +288,9 @@ rev() { # like R function, reverses order of arguments
 # but 0 padding between repeats,
 # e.g. `echo rep 50 =` --> =======...
 rep0() {
-    i=0; N=$1; shift
+    i=0; _N=$1; shift
     output=
-    while ((i++ < N)); do
+    while ((i++ < _N)); do
         output="$output""$@"
     done
     echo "$output"
@@ -291,8 +300,9 @@ rep0() {
 # e.g. `map rand_numeric_perturb $(rep 1000 2)`,
 # echo $(rep 5 "'1 2 3'") --> '1 2 3' '1 2 3'...
 rep() {
-    N=$1; shift;
-    rep0 $N "'$@' "
+    _N=$1; shift;
+    ret=$(rep0 $((_N-1)) "'$@' ")"'$@'"
+    echo "$ret"
 }
 
 ############## CLI arg perturb: ##############
@@ -360,8 +370,8 @@ export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
 #}
 
 ## NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3 
-#map_() { cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done; }
-#map_tuple() { eval map_ "$@"; } # experimental version of map that should be able to inline subshell expansion e.g.: map_tuple echo $(rep 2 '1 2') --> (matrix) "1 2"\n"1 2"
+map_() { cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done; }
+map_tuple() { eval map_ "$@"; } # experimental version of map that should be able to inline subshell expansion e.g.: map_tuple echo $(rep 2 '1 2') --> (matrix) "1 2"\n"1 2"
 #map() { map_tuple "$@" } # map_tuple idea taken from here (they claim its dangerous): https://superuser.com/questions/1529226/get-bash-to-respect-quotes-when-word-splitting-subshell-output#
 ##  TODO: if it works add asynchronous version!
 
