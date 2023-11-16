@@ -1,5 +1,7 @@
 # Verified to work 11/13/23
 # regular read_csv/read.csv except it caches & instantly reloads duplicates
+# IMPORTANT: It uses modification timestamps to esnure cache validitity, after more testing 
+# (long term use) it should be able to wrap both read.csv and read_csv... make it happen!
 if (!exists('read_csv_cached')) {
   read_csv_cached = function(fn, ...) {
     fn <- normalizePath(fn)
@@ -52,9 +54,22 @@ rm_all_data = function(all.names=T) rm(list=setdiff(ls(all.names = all.names), l
 
 # NOTE: this is like a better relative error! Because it doesn't allow singularities
 # Relative Percentage Difference: https://stats.stackexchange.com/questions/86708/how-to-calculate-relative-error-when-the-true-value-is-zero/86710#86710
-sMAPE = function(Yp, Yt) mean(abs(Yp-Yt)/((abs(Yp)+abs(Yt))/2), na.rm=T) # Verified to work 8/3/23
-MAPE = function(Yp, Yt) mean(abs(Yp-Yt)/abs(Yt), na.rm=T) # NOTE: MAPE doesn't actually give a percent, it's just 0-1
-R2 = function(Yp, Yt) 1-mean(apply((Yp-Yt)**2, -1, mean, na.rm=T)/apply(Yt, -1, var, na.rm=T), na.rm=T)
+sMAPE = function(Yp, Yt, na.rm=F) mean(abs(Yp-Yt)/((abs(Yp)+abs(Yt))/2), na.rm=na.rm) # Verified to work 8/3/23
+MAPE = function(Yp, Yt, na.rm=F) mean(abs(Yp-Yt)/abs(Yt), na.rm=na.rm) # NOTE: MAPE doesn't actually give a percent, it's just 0-1
+R2_1d = function(Yp, Yt, na.rm=F) 1-mean((Yp-Yt)**2, na.rm=na.rm)/var(Yt, na.rm=na.rm)
+
+# Verified to work 11/15/23
+# should handle matrices and 1d vectors!
+R2 = function(Yp, Yt, avg=F, var_weighted=F, na.rm=F)  {
+    stopifnot(!(avg && var_weighted)) # mutually exclusive
+    variances = apply(as.matrix(Yt), -1, var, na.rm=na.rm)
+    R2_values = 1-apply(as.matrix((Yp-Yt)**2), -1, mean, na.rm=na.rm)/variances
+    R2_weights = NULL
+    if (avg) R2_weights=1/length(variances)
+    else if (var_weighted) R2_weights=variances/sum(variances, na.rm=na.rm)
+    if (!is.null(R2_weights)) R2_values=sum(R2_values*R2_weights, na.rm=na.rm)
+    return(R2_values)
+}
 
 ###################### glmnet helpers ######################
 # TODO: delete & use h2o once they fix intercept=F bug
