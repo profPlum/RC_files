@@ -18,7 +18,7 @@ alias scp='scp -r' # usually if you're scping a directory you should zip first..
 alias rsync='rsync -r --update --compress --progress' # rsync seems to be better than scp, and it works without compression
 alias ls='ls -ltrh --color=yes' # sort results with most recently modified first!
 alias lsz='du -hs * .??*' # gives you accurate measurements of size for **local directories** (& files), ls only does files
-alias grep='grep -niP'
+alias grep='grep -ni'
 alias ln='ln -s' # symbolic links are best, that's *why* they can point to dirs
 alias ssh='ssh -q'
 alias vi='vim'
@@ -35,12 +35,12 @@ alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new
 # also you can override any defaults just by specifying them again!
 # GOTCHA: apparently xargs doesn't work by default with bash functions?? Use new amap instead! 
 
-
 amap() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd in front!
     [[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
     export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
     bash_cmd="$@ "'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
     xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) -I {} bash -c "$bash_cmd" _ {}
+    # also we set -P to the number of cores avaiable on the computer
 }
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
@@ -120,7 +120,7 @@ alias gpf='git push -f' # unnecessary?
 alias gca='git commit --amend'
 
 alias gfrb="git fetch; git rebase" # when local branch is stale
-alias fcon='grep -n ">>>"' # find git conflicts
+alias fcon='grep -n ">>>>"' # find git conflicts
 alias hdif='git diff HEAD --' # diff with head (with no arg acts on entire repo)
 # IMPORTANT: hdif > stash.patch, create a PATCH FILE from local changes! --> then do: `git apply stash.patch` 
 
@@ -276,7 +276,15 @@ str_concat() { echo "$@" | sed -r 's| ||g'; }
 # Verified to work: 11/10/23
 # This function builds a regex pattern which matches 
 # integers between 0-$1 (inclusive/exclusive like python range())
-regex_number_range() { x=$(seq $1 $2 | tr '\n' '|'); echo "(${x%%|$2|})"; }
+_regex_number_range() { x=$(seq $1 $2 | tr '\n' '|'); echo "(?<![0-9eE.-])(?:${x%%|$2|})(?![0-9eE.])"; }
+regex_number_range() {
+    start=0
+    if (($#==2)); then
+        start=$1; shift
+    fi
+    echo $(_regex_number_range $start $1)
+}
+
 
 rev() { # like R function, reverses order of arguments
     for (( i=$#;i>0;i-- )); do
@@ -369,11 +377,11 @@ export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
 #    sleep 300
 #}
 
-## NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3 
-map_() { cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done; }
-map_tuple() { eval map_ "$@"; } # experimental version of map that should be able to inline subshell expansion e.g.: map_tuple echo $(rep 2 '1 2') --> (matrix) "1 2"\n"1 2"
-#map() { map_tuple "$@" } # map_tuple idea taken from here (they claim its dangerous): https://superuser.com/questions/1529226/get-bash-to-respect-quotes-when-word-splitting-subshell-output#
-##  TODO: if it works add asynchronous version!
+### NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3 
+#map_() { cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done; }
+#map_tuple() { eval map_ "$@"; } # experimental version of map that should be able to inline subshell expansion e.g.: map_tuple echo $(rep 2 '1 2') --> (matrix) "1 2"\n"1 2"
+##map() { map_tuple "$@" } # map_tuple idea taken from here (they claim its dangerous): https://superuser.com/questions/1529226/get-bash-to-respect-quotes-when-word-splitting-subshell-output#
+###  TODO: if it works add asynchronous version!
 
 
 #amap() { # asynchronous version of map!
