@@ -1,3 +1,5 @@
+options(readr.read_lazy = TRUE) # this should be optimal in R because it only fails on windows
+
 # Verified to work 11/13/23
 # regular read_csv/read.csv except it caches & instantly reloads duplicates
 # IMPORTANT: It uses modification timestamps to esnure cache validitity, after more testing 
