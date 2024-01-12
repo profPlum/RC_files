@@ -39,7 +39,7 @@ amap() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd
     [[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
     export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
     bash_cmd="$@ "'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
-    xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) -I {} bash -c "$bash_cmd" _ {}
+    xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
     # also we set -P to the number of cores avaiable on the computer
 }
 
@@ -221,7 +221,7 @@ zd() { zip -r "$1".zip "$1"; } # zip dir
 # request interactive slurm shell
 # -N := num nodes, -n := num cores
 slurm-ishell() { srun $@ --pty bash; }
-alias swatch-me="watch \"squeue --me --format='%.10i %.9P %.30j %.8T %.10M %.9l %.6D %.18R'\""
+alias swatch-me="watch \"squeue --me --format='%.10i %.9P %.40j %.8T %.10M %.9l %.6D %.18R'\""
 # slurm watch me + better formatting (tested better formatting on CCR 10/11/23)
 
 # logs command output!
