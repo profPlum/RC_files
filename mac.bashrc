@@ -96,6 +96,14 @@ alias l='ls -CF'
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
 
+# Set PATH, MANPATH, etc., for Homebrew.
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Alias definitions.
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
 sed() { # turn off mac OS BS related to sed
     if [[ $1 == -i ]]; then
         shift
@@ -104,11 +112,6 @@ sed() { # turn off mac OS BS related to sed
         /usr/bin/sed "$@"
     fi
 }
-
-# Alias definitions.
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -195,13 +198,17 @@ GUI_HOST="deep-learning-12c85r1a100-dwyer-0-vm"
 #alias start-gpu8='gcloud compute instances start --zone "us-central1-c" "$GPU8_HOST" --project "automl-training-env-poc"'
 #alias scp-gpu8='gcloud compute scp --zone "us-central1-c" --project "automl-training-env-poc"'
 #
+OLCF_FRONTIER='frontier.olcf.ornl.gov'
 OLCF_SUMMIT='summit.olcf.ornl.gov'
-OLCF_HOME='home.ccs.ornl.gov'
 OLCF_ANDES='andes.ccs.ornl.gov'
+OLCF_HOME='home.ccs.ornl.gov'
+OLCF_DTN='dtn.ccs.ornl.gov'
 
+alias frontier="ssh dwyerfire@$OLCF_FRONTIER"
 alias summit="ssh dwyerfire@$OLCF_SUMMIT"
-alias andes="ssh dwyerfire@$OLCF_ANDES"
-# andes is for pre/post processing
+alias andes="ssh dwyerfire@$OLCF_ANDES" # andes is for pre/post processing
+alias dtn_olcf="ssh dwyerfire@$OLCF_DTN" # data transfer nodes
+alias home_olcf="ssh dwyerfire@$OLCF_HOME" # Run Tmux/Screen Sessions
 
 # NOTE: this node has nothing to do with AHAB... just a mistaken name
 AWS_HOST='ubuntu@dwyer-train-gpu.defitrade.guru'
@@ -211,15 +218,26 @@ alias aws="ssh $AWS_HOST -L 8888:127.0.0.1:8888 -L 6006:127.0.0.1:6006 -X"
 
 alias pp='cd ~/Desktop/post-processing/chrest/' # Post-Processing
 alias ctdf='cd ~/CLionProjects/ablate/ablateInputs/chemTabDiffusionFlame' # ChemTab Inputs
+alias ablate='cd ~/CLionProjects/ablate'
 
+clang-format-inplace() {
+    clang-format $1 > "$1.formatted"
+    mv "$1.formatted" $1
+}
+
+FAWKES_HOST='dwyerdei@fawkes.cse.buffalo.edu'
 BU_HOST='dwyerdei@catesby.cse.buffalo.edu'
 CCR_HOST='dwyerdei@vortex.ccr.buffalo.edu'
 #CCR_HOST='dwyerdei@vortex-future.ccr.buffalo.edu' # TODO: switch to this eventually... right now doesn't support interactive debugging
 
-alias bu="ssh $BU_HOST -X -L 7860:127.0.0.1:7860 -L 6006:127.0.0.1:6006 -L 6007:127.0.0.1:6007 -L 6008:127.0.0.1:6008 -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890 -L 8891:127.0.0.1:8891 -L 8892:127.0.0.1:8892 -L 8893:127.0.0.1:8893"
+ALL_LISTENING_PORTS='-L 7860:127.0.0.1:7860 -L 6006:127.0.0.1:6006 -L 6007:127.0.0.1:6007 -L 6008:127.0.0.1:6008 -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890 -L 8891:127.0.0.1:8891 -L 8892:127.0.0.1:8892 -L 8893:127.0.0.1:8893'
+
+alias fawkes="ssh $FAWKES_HOST -X $ALL_LISTENING_PORTS -L 8080:127.0.0.1:8080" 
+alias bu="ssh $BU_HOST -X $ALL_LISTENING_PORTS" 
 alias ccr="ssh $CCR_HOST -X" # -L 6006:127.0.0.1:6006" # -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890"
 
 alias cclean='rm -rf CMakeCache.txt CMakeFiles _deps Makefile'
+alias date='gdate'
 
 #########################################################
 # UPDATE: Actually turns out bracketed paste mode is really important & seems to be working now 10/23/23
@@ -227,4 +245,4 @@ alias cclean='rm -rf CMakeCache.txt CMakeFiles _deps Makefile'
 eval $(ssh-agent -s)
 # Set PATH, MANPATH, etc., for Homebrew.
 eval "$(/opt/homebrew/bin/brew shellenv)"
-#. "$HOME/.cargo/env"
+. `which env_parallel.bash`
