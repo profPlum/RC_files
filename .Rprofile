@@ -1,5 +1,6 @@
 options(readr.read_lazy = TRUE) # this should be optimal in R because it only fails on windows
 
+# IMPORTANT: use continuous_IC(dataframe, thumb='estim') to get KDE-CV tunned bandwidths!
 # NOTE: Continuous means we use PDF instead of Probability!
 # This isn't strictly the definition of IC & it has slightly less beautiful properties
 # (e.g. the minimum isn't 0, and less intuitive definition)
@@ -7,7 +8,8 @@ continuous_IC = function(df, normalize=F, ...) {
   library(Compositional)
   df = as.matrix(df)
   stopifnot(Vectorize(is.numeric)(df))
-  
+  cat("IMPORTANT: try `continuous_IC(dataframe, thumb='estim')` to get KDE-CV tunned bandwidths!")
+
   kde.pdf = mkde(df, ...)
   IC = -log(kde.pdf)
   
@@ -16,6 +18,15 @@ continuous_IC = function(df, normalize=F, ...) {
     IC = IC/sum(IC)
   }
   return(IC)
+}
+
+# get cross validation KDE loglikelihood of the entire dataset
+cv_kde_LL = function(df) {
+    library(Compositional)
+    df = as.matrix(df)
+    stopifnot(is.numeric(df))
+    cat('This get cross validation KDE loglikelihood of the entire dataset.')
+    mkde.tune(df)$maximum
 }
 
 fit_H2O_aml = function(df, y_col, max_runtime_secs=3*60, val_split=0.0,
@@ -146,14 +157,14 @@ mad = function(x, na.rm=F) mean(abs(x-mean(x, na.rm=na.rm)), na.rm=na.rm)
 ###################### glmnet helpers ######################
 # TODO: delete & use h2o once they fix intercept=F bug
 
-glmnet_R2 = function(glmnet_cv_out, s='lambda.1se') {
+glmnet_R2 = function(glmnet_cv_out, s='lambda.min') {
   ids = list(lambda.min=glmnet_cv_out$index[[1]], lambda.1se=glmnet_cv_out$index[[2]])
   R_Squared_train = glmnet_cv_out$glmnet.fit$dev.ratio[[ ids[[s]] ]]
   return(R_Squared_train)
 }
 
 # returns coefs as named vector (like we expect)
-coef.cv.glmnet = function(cv, s='lambda.1se', ...) {
+coef.cv.glmnet = function(cv, s='lambda.min', ...) {
   lm_coefs_raw = glmnet::coef.glmnet(cv, s=s, ...)
   lm_coefs = as.vector(lm_coefs_raw)
   names(lm_coefs) = gsub('`', '', rownames(lm_coefs_raw))
@@ -161,7 +172,8 @@ coef.cv.glmnet = function(cv, s='lambda.1se', ...) {
 }
 
 glmnet=function(formula, data) #TODO: figure out corresponding method for predict() which can reuse formula + new df flexibly
-  glmnet::cv.glmnet(as.matrix(model.matrix(formula, data=data)), y=data[[ all.vars(formula)[[1]] ]], intercept=F)
+  glmnet::cv.glmnet(as.matrix(model.matrix(formula, data=data)), y=data[[ all.vars(formula)[[1]] ]], intercept=F) #,
+                    #nfolds=min(10,as.integer(nrow(data)/3))
 # if user requests it intercept will implicitly be included by formula
 
 # Verified to work 11/8/23
