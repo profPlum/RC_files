@@ -4,14 +4,22 @@
 ##### Contains aliases, functions and optionally #####
 ##### path additions needed for all .bashrc files. #####
 
+if [[ "$(which env_parallel 2>/dev/null)" ]]; then
+    . `which env_parallel.bash` # setup env_parallel command
+    env_parallel --session # must come first for proper usage! (so it knows what env to exclude)
+    #alias parallel='env_parallel' # it's the same except a tad slower & exports the environment!! Totally worth it!
+fi
+
 ##################### Redefinitions: #########################
 
 # NOTE: not an alias but remember: `killall` over~ `pkill -9`
 # v Can't follow links rn, it would need to be `find $@ . -name $1`
 alias find='find . -name'
+alias bc='bc -l' # loads math library & enables floating point arithemtic
 alias clr='clear'
 alias hst='history'
-alias host='hostname'
+#alias host='hostname' # actually host is already a useful DNS command, keep it as-is
+alias duh='du -shc *' # simple command shows how much space your directories take up
 alias watch='watch -n 1' # this checks status, which never takes too much cpu
 alias cp='cp -r'
 alias scp='scp -r' # usually if you're scping a directory you should zip first...
@@ -35,13 +43,15 @@ alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new
 # also you can override any defaults just by specifying them again!
 # GOTCHA: apparently xargs doesn't work by default with bash functions?? Use new amap instead! 
 
-amap() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd in front!
-    [[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
-    export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
-    bash_cmd="$@ "'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
-    xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
-    # also we set -P to the number of cores avaiable on the computer
-}
+# IMPORTANT: entirety of amap_f could be replaced by this one-liner!!
+amap() { \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$1" _; }
+# It requires passing one string command argument and passing inputs line by line
+# For strings which should be split up you could do echo $ARGS | xargs -n$N_PER | amap_f 'cmd1 $1 | cmd2 $2 # etc...'
+
+# Verified to work (on CCR): 5/23/24
+# NOTE: new version of amap which also inherets the entire shell-scope from the calling shell!
+amap_env() { (export $(compgen -v); \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$(declare -f);""$1" _) ; }
+# GOTCHA: actually this should be depreciated in favor of env_parallel which is a project that does everything you want and much more!
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example xargs usage (1-node usage):
@@ -68,8 +78,12 @@ tar-unzip() {
 ##################### Anaconda/Pip: #####################
 
 # use drop-in replacement when appropriate!
-echo warning: will alias conda=mamba if mamba exists >&2
-[ $(which mamba) ] && alias conda='mamba'
+if [ "$(which mamba 2>/dev/null)" ]; then
+    alias conda='mamba'
+    echo Note: we are aliasing conda=mamba b/c mamba exists. >&2
+else
+    echo Warning: mamba not found!! >&2
+fi
 
 alias ci='conda install'
 alias cui='conda uninstall'
@@ -92,7 +106,21 @@ alias pud='pip install --upgrade pip' # pip up-date
 git config --global rerere.enabled 1
 git config --global rerere.autoupdate true
 [ $(which vim) ] && git config --global core.editor "vim"
-git config core.filemode false # prevents "file mode changes" from clogging git status
+git config --global core.filemode false # prevents "file mode changes" from clogging git status
+
+# Very useful! Clears all meta data & output bloat that accumulates in jupyter notebooks
+alias clean_jupyter='jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True --to=notebook --inplace'
+
+# removes extra white space from auto-indent to avoid annoying git modifications
+flat_ws() {
+    sed -Ei'' 's|\s+$||g' "$@"
+}
+flat_code_ws() {
+    #NOTE: the leading backlash is needed to avoid using the alias
+    echo flattening whitespace
+    \find . -regextype posix-extended -type f -regex ".*\.(c|cpp|h|py|sh|R|yaml)" | amap_env 'flat_ws $1' 
+    echo done!
+}
 
 alias gf='git fetch'
 alias grb='git rebase'
@@ -101,10 +129,11 @@ alias gp='git push'
 alias gpl='git pull'
 ga() { # no args = update
     cmd="git add"
+    #flat_code_ws # flatten whitespace
     if (($#==0)); then
         cmd="$cmd -u"
     fi
-    $cmd $@
+    $cmd $@ # git add
 }
 alias gl='git log'
 alias gr='git reset'
@@ -112,7 +141,16 @@ alias gr='git reset'
 alias gst='git status'
 alias gs='git stash'
 alias gsa='git stash apply'
-alias gc='git commit'
+#alias gc='git commit'
+gc() {
+    root="$(git rev-parse --show-toplevel)"
+    \cd "$root"
+    flat_ws $(git diff --name-only --cached | \grep -E ".*\.(c|cpp|h|py|sh|R|yaml)$")
+    git add $(git diff --name-only --cached)    
+    \cd -
+    git commit
+}
+
 alias gco='git checkout'
 alias gb='git branch'
 
@@ -176,6 +214,47 @@ grbp() {
 ############# General Purpose & Unique Commands: #############
 ##############################################################
 
+alias kill_kids='pkill -P $$'
+alias jupyter2py='jupyter nbconvert --to script' #e.g. jupyter2py notebook.ipynb # (--> produces notebook.py)
+alias rm_bad_lns='\find . -xtype l -delete' # deletes broken links
+
+# Example usage: at_night log . some_job.sh
+# Verified to work 7/4/24
+export _NIGHT_TIME='today 23:00' # or 'tomorrow 00:00' (midnight)
+alias at_night='sleep $(( $(date +%s -d "$_NIGHT_TIME") - $( date +%s ) )); '
+
+alias no_numbers="sed -E 's|[0-9]+||g'"
+alias unique="no_numbers | sort | uniq"
+
+# drops all but most recent N files/folders in a directory
+keep_last_N_files() {
+    dir=$1
+    n_keep=$2
+
+    echo dir=$dir, N=$n_keep, pwd=$(pwd)
+
+    files=$(/bin/ls -t $dir)
+    n_total=$(echo $files | wc -w)
+    n_drop=$(( n_total-n_keep ))
+
+    echo counted $n_total existing files!
+    echo dropping $n_drop old files
+
+    if ((n_total<=n_keep)); then
+        echo nothing to do... exiting
+        return 0 || exit 0
+    fi
+    
+    \cd $dir
+    files=$(echo $files | tr ' ' '\n' | tail -n $n_drop)
+    echo files to drop:
+    echo $files | tr ' ' '\n'
+
+    # remove all old files 
+    /bin/rm -rf $files 2> /dev/null
+    \cd - > /dev/null
+}
+
 alias stop='return 0 || exit 0'
 assert() { eval [[ "$@" ]] && echo Assert is False!! : "$@" && exit 2; } # requires subshell execution!
 export -f assert
@@ -185,7 +264,7 @@ download_drive_file_by_id() { wget --no-check-certificate "https://drive.google.
 under_score_name() { name=$(echo "$1" | tr ' ' '_'); mv "$1" $name; }
 
 # verified to work 6/9/22, NOTE: replaces all occurrences of $2 with $3 in folder: $1
-repl_strs_in_dir() { /usr/bin/find "$1" -type f | xargs sed -i'' "s|$2|$3|g"; }
+repl_strs_in_dir() { \find "$1" -type f | xargs sed -i'' "s|$2|$3|g"; }
 repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
     cmd="s|$1|$2|g"
     shift; shift
@@ -196,9 +275,6 @@ repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
 # simplified sed, takes $1 as pattern & $2 as replace
 sd() { xargs -0 echo | sed "s|$1|$2|g"; }
 
-#map() { echo map is deprecated now for xargs >&2; return 1; }
-#amap() { echo amap is deprecated now for xargs >&2; return 1; }
-
 # IMPORTANT: xargs is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example xargs usage (1-node usage):
 # echo 1 2 3 | xargs echo
@@ -207,9 +283,11 @@ sd() { xargs -0 echo | sed "s|$1|$2|g"; }
 
 mb() { mv "$1" "${1}.${RANDOM}.bak"; } # mb=make backup! (moves original file)
 
+# NOTE: `reset` is also useful for fixing undefined state
 alias rld='. ~/.bashrc'
 alias pdb='python -m pdb'
-alias jn='jupyter notebook'
+alias jn='jupyter notebook --no-browser'
+alias jl='jupyter lab --no-browser'
 alias mytop='top -u $USER'
 alias sr='screen -r' # simple alternative to full function
 alias sls='screen -ls'
@@ -366,6 +444,44 @@ auto_cli_perturb() {
 export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
 
 ################ Deprecated: ################
+
+#amap() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd in front!
+#    [[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
+#    export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
+#    bash_cmd="$@ "'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
+#    xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
+#    # also we set -P to the number of cores avaiable on the computer
+#} # PS: apparenlty amap parallel & blocking! perfect
+
+### TODO: replace amap once stable!
+## NOTE: N_PER inferred automatically!
+## A variant of amap that requires cmd is passed as string with $1 $2 etc... var placement args
+## Example usage: echo1() { echo "$@"; }; seq 1 4 | amap_f 'echo1 1st: $1 2nd: $2' # str cmd is essential!! 
+#amap_f() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd in front!
+#    #[[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
+#    N_PER=$(echo "$1" | \grep -o -E '\$[0-9]+' | wc -l) # count position arg uses
+#    export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
+#    bash_cmd="$@ " #'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
+#    if ((!$N_PER)); then 
+#        N_PER=1
+#        bash_cmd="$@ "'"$1"'
+#    fi
+#    xargs -L 1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
+#    #xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
+#    # also we set -P to the number of cores avaiable on the computer
+#} # PS: apparenlty amap parallel & blocking! perfect
+
+
+## Verified to work 4/18/24
+#amap_f() {
+#    args=($1)
+#    echo ${args[0]}
+#    export -f ${args[0]}
+#    func_source="func() { $1; }"
+#    echo func_source: $func_source
+#    eval "func() { $1; }"       
+#    amap func
+#}
 
 #stop() {
 #    echo '############################ NOTE: ##################################'
