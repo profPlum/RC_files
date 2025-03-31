@@ -1,5 +1,29 @@
 options(readr.read_lazy = TRUE) # this should be optimal in R because it only fails on windows
 
+no_attrs = function(x) {
+    attributes(x) = NULL
+    return(x)
+}
+
+# Verified to work: 1/14/25
+response_surface_optimum = function(data, param_name, response_name, minimize=F) {
+  param = data[[param_name]]
+  response = data[[response_name]]
+  model = lm(response~param+I(param**2))
+  print(summary(model))
+  pred = tibble(param=seq(min(param), max(param), length.out=100))
+  pred$PPC_LL = predict(model, newdata=pred)
+  plot(param, response, xlab=param_name, ylab=response_name,
+       main=paste(param_name, 'Response Surface Curve & Data Points'))
+  lines(pred$param, pred$PPC_LL, col='blue')
+  
+  objective = function(x) (minimize*2-1)*predict(model, newdata = tibble(param=x))
+  approx_best = nlm(objective, p=sample(param,1))$estimate
+  abline(v=approx_best, col='red')
+  cat(paste('Approximate', ifelse(minimize, 'minimizer:', 'maximizer:'), param_name, '=', approx_best))
+  return(approx_best)
+}
+
 # IMPORTANT: use continuous_IC(dataframe, thumb='estim') to get KDE-CV tunned bandwidths!
 # NOTE: Continuous means we use PDF instead of Probability!
 # This isn't strictly the definition of IC & it has slightly less beautiful properties
@@ -34,16 +58,18 @@ fit_H2O_aml = function(df, y_col, max_runtime_secs=3*60, val_split=0.0,
                    val_df=tail(df, n=nrow(df)*val_split), explain=T, ...) {
   library(h2o)
   h2o.init()
-  
+
   #if (explain) report_IC_in_splits(train_df, val_df)
-  
+
   train_df = as.h2o(train_df); val_df = as.h2o(val_df)
   if (!nrow(val_df)) val_df = NULL
   aml = h2o.automl(y=y_col, training_frame = train_df,
                    validation_frame = val_df,
                    max_runtime_secs=max_runtime_secs, ...)
   
-  if (!is.null(val_df) && explain) print(h2o.explain(aml, val_df))
+  if (!is.null(val_df) && explain) {
+      print(h2o.explain(aml, val_df))
+  } 
 
   leader = h2o.get_best_model(aml)
   cat(rep('=', 50), '\n')
