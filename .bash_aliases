@@ -48,10 +48,14 @@ amap() { \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$1" _; }
 # It requires passing one string command argument and passing inputs line by line
 # For strings which should be split up you could do echo $ARGS | xargs -n$N_PER | amap_f 'cmd1 $1 | cmd2 $2 # etc...'
 
+amap1() { xargs -n1 | amap "$@" ; }
+
 # Verified to work (on CCR): 5/23/24
 # NOTE: new version of amap which also inherets the entire shell-scope from the calling shell!
 amap_env() { (export $(compgen -v); \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$(declare -f);""$1" _) ; }
 # GOTCHA: actually this should be depreciated in favor of env_parallel which is a project that does everything you want and much more!
+
+map_env() { (export $(compgen -v); \xargs -L1 bash -c "$(declare -f);""$1" _) ; }
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example xargs usage (1-node usage):
@@ -226,15 +230,60 @@ alias at_night='sleep $(( $(date +%s -d "$_NIGHT_TIME") - $( date +%s ) )); '
 alias no_numbers="sed -E 's|[0-9]+||g'"
 alias unique="no_numbers | sort | uniq"
 
+alias stop='return 0 || exit 0'
+assert() { eval [[ "$@" ]] && echo Assert is False!! : "$@" && exit 2; } # requires subshell execution!
+export -f assert
+
+# NOTE: where $1 is the real file name, and $2 is the id from the url
+download_drive_file_by_id() { wget --no-check-certificate "https://drive.google.com/uc?authuser=0&id=$2&export=download&confirm=yes" -O $1; }
+
+# Verified to work 6/9/22, NOTE: replaces all occurrences of $2 with $3 in folder: $1
+repl_strs_in_dir() { \find "$1" -type f | xargs sed -i'' "s|$2|$3|g"; }
+repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
+    cmd="s|$1|$2|g"
+    shift; shift
+    sed -i'' "$cmd" $@ #TODO: maybe add backup suffix?
+    # NOTE: using sed -i'' is most general/compatible way to use sed across mac & linux
+}
+
+# maybe extra?
+# simplified sed, takes $1 as pattern & $2 as replace
+sd() { sed -E "s|$1|$2|g"; }
+
+# Verified to work: 4/30/25
+# USAGE: quote "let's quote this\!" --> 'let\\'s quote this\!'
+quote()
+{   
+    local quoted=${@//\'/\'\\\'\'};
+    printf "'%s'\n" "$quoted"
+}
+
+# USAGE: cat file | quote_lines
+quote_lines() {
+    while read -r LINE; do
+        quote $LINE
+    done
+}
+
+# All Verified to work: 4/30/45
+under_score_name() { name=$(dirname "$@")/$(basename "$@" | tr ' ' '_'); [[ "${@}" != "$name" ]] && mv "${@}" "$name"; }
+under_score_directory() { \ls -1 "$@" | quote_lines | amap_env 'under_score_name "$1"' ; } # non-recursive!
+under_score_recursive() { \find . -not -path '*/.*' | sed '1d' | quote_lines | tac | map_env 'under_score_name "$1"'; } # dangerous!
+# ^ idea here is find all non-hidden files, then exclude '.', then quote to fix apostrophes, then reverse the order & sequential map so that renaming top-level directories doesn't break other paths
+
 # drops all but most recent N files/folders in a directory
 keep_last_N_files() {
-    dir=$1
-    n_keep=$2
+    n_keep=$1
+    if (( $# > 1)); then
+        dir="$2"
+    else
+        dir=.
+    fi
 
-    echo dir=$dir, N=$n_keep, pwd=$(pwd)
+    echo N=$n_keep, dir=$dir, pwd=$(pwd)
 
-    files=$(/bin/ls -t $dir)
-    n_total=$(echo $files | wc -w)
+    files=$(\ls -1t "$dir")
+    n_total=$(echo "$files" | wc -l)
     n_drop=$(( n_total-n_keep ))
 
     echo counted $n_total existing files!
@@ -245,14 +294,16 @@ keep_last_N_files() {
         return 0 || exit 0
     fi
     
-    \cd $dir
-    files=$(echo $files | tr ' ' '\n' | tail -n $n_drop)
+    files=$(echo "$files" | \tail -n $n_drop)
     echo files to drop:
-    echo $files | tr ' ' '\n'
+    echo "$files"
 
-    # remove all old files 
-    /bin/rm -rf $files 2> /dev/null
-    \cd - > /dev/null
+    ## alternative to the loop
+    #quote_lines <<< "$files" | amap_env 'rm -rf "$dir"/"$1"'
+
+    while read -r file; do
+        rm -rf "$dir"/"$file"
+    done <<< "$files"
 }
 
 alias stop='return 0 || exit 0'
@@ -261,25 +312,6 @@ export -f assert
 
 # NOTE: where $1 is the real file name, and $2 is the id from the url
 download_drive_file_by_id() { wget --no-check-certificate "https://drive.google.com/uc?authuser=0&id=$2&export=download&confirm=yes" -O $1; }
-under_score_name() { name=$(echo "$1" | tr ' ' '_'); mv "$1" $name; }
-
-# verified to work 6/9/22, NOTE: replaces all occurrences of $2 with $3 in folder: $1
-repl_strs_in_dir() { \find "$1" -type f | xargs sed -i'' "s|$2|$3|g"; }
-repl() { # verified to work 9/6/23, EXAMPLE: repl old new *.txt
-    cmd="s|$1|$2|g"
-    shift; shift
-    sed -i'' "$cmd" $@ #TODO: maybe add backup suffix?
-    # NOTE: using sed -i'' is most general/compatible way to use sed across mac & linux
-}
-
-# simplified sed, takes $1 as pattern & $2 as replace
-sd() { xargs -0 echo | sed "s|$1|$2|g"; }
-
-# IMPORTANT: xargs is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
-# Example xargs usage (1-node usage):
-# echo 1 2 3 | xargs echo
-# Example amap multi-node usage (on slurm):
-# echo 1 2 3 | xargs srun -n 1 python some_script.py
 
 mb() { mv "$1" "${1}.${RANDOM}.bak"; } # mb=make backup! (moves original file)
 
@@ -296,10 +328,8 @@ alias cd..='cd ..'
 mkcd() { mkdir $1; cd $1; }
 zd() { zip -r "$1".zip "$1"; } # zip dir
 
-# request interactive slurm shell
-# -N := num nodes, -n := num cores
-slurm-ishell() { srun $@ --pty bash; }
-alias swatch-me="watch \"squeue --me --format='%.10i %.9P %.40j %.8T %.10M %.9l %.6D %.18R'\""
+# NOTE: request interactive slurm shell --> salloc cmd
+alias swatch-me="watch \"squeue --me -S S --format='%.10i %.9P %.40j %.8T %.10M %.9l %.6D %.18R'\""
 # slurm watch me + better formatting (tested better formatting on CCR 10/11/23)
 
 # logs command output!
@@ -344,8 +374,6 @@ get_access_date() {
     d=$(stat "$1" | sed -n 's/^Access: [A-z]* \(.*\)$/\1/p')
     date -jf '%b %d %H:%M:%S %y' "$d" +%s
 }
-
-under_score_name() { name=$(echo "$1" | tr ' ' '_'); mv "$1" $name; }
 
 # split input args (string) on characters (e.g. 12 --> 1 2)
 str_split() { echo "$@" | fold -w1 | xargs -n 5000 echo; } 
@@ -442,126 +470,3 @@ auto_cli_perturb() {
 
 # Important for subshells/job scripts!
 export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
-
-################ Deprecated: ################
-
-#amap() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd in front!
-#    [[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
-#    export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
-#    bash_cmd="$@ "'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
-#    xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
-#    # also we set -P to the number of cores avaiable on the computer
-#} # PS: apparenlty amap parallel & blocking! perfect
-
-### TODO: replace amap once stable!
-## NOTE: N_PER inferred automatically!
-## A variant of amap that requires cmd is passed as string with $1 $2 etc... var placement args
-## Example usage: echo1() { echo "$@"; }; seq 1 4 | amap_f 'echo1 1st: $1 2nd: $2' # str cmd is essential!! 
-#amap_f() { # NOTE: like xargs you pass the inputs as stdin, but specify static cmd in front!
-#    #[[ $N_PER ]] || N_PER=1 # you can pass N_PER env var to set `xargs -n` (i.e. num args one cmd consumes)
-#    N_PER=$(echo "$1" | \grep -o -E '\$[0-9]+' | wc -l) # count position arg uses
-#    export -f $1 2> /dev/null # export it (Dynamically!) if it's a function
-#    bash_cmd="$@ " #'"$@"' # apparently storing cmd in a var is needed to pass multiple args to cmd
-#    if ((!$N_PER)); then 
-#        N_PER=1
-#        bash_cmd="$@ "'"$1"'
-#    fi
-#    xargs -L 1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
-#    #xargs -n $N_PER -P $(getconf _NPROCESSORS_ONLN) bash -c "$bash_cmd" _
-#    # also we set -P to the number of cores avaiable on the computer
-#} # PS: apparenlty amap parallel & blocking! perfect
-
-
-## Verified to work 4/18/24
-#amap_f() {
-#    args=($1)
-#    echo ${args[0]}
-#    export -f ${args[0]}
-#    func_source="func() { $1; }"
-#    echo func_source: $func_source
-#    eval "func() { $1; }"       
-#    amap func
-#}
-
-#stop() {
-#    echo '############################ NOTE: ##################################'
-#    echo It seems impossible to make a true "stop command" \(all your options failed\),
-#    echo instead do this: type "return 0 || exit 0" in your script.
-#    echo Or for even more simplicity consider just using "return 0",
-#    echo since usually that will work \(in just about all cases except mpirun\).
-#    echo '#####################################################################'
-#    sleep 300
-#}
-
-### NOTE: much easier than a bash loop!! e.g.: map echo 1 2 3 
-#map_() { cmd="$1"; shift; for x in "$@"; do eval "$cmd $x"; done; }
-#map_tuple() { eval map_ "$@"; } # experimental version of map that should be able to inline subshell expansion e.g.: map_tuple echo $(rep 2 '1 2') --> (matrix) "1 2"\n"1 2"
-##map() { map_tuple "$@" } # map_tuple idea taken from here (they claim its dangerous): https://superuser.com/questions/1529226/get-bash-to-respect-quotes-when-word-splitting-subshell-output#
-###  TODO: if it works add asynchronous version!
-
-
-#amap() { # asynchronous version of map!
-#    echo "MPIRUN_CMD: $MPIRUN_CMD"
-#    echo "MPIRUN_CMD can be e.g. 'srun -n 1' (slurm multi-node execution), or '' (empty, default 1 node execution)"
-#    echo ALSO, recall: a common use case is to 'wait' after this call, for all processes to finish
-#    cmd="$MPIRUN_CMD $1"; shift; for x in "$@"; do eval "$cmd $x" & done
-#} # NOTE: we used to put the for loop in a subshell why is that?? is it still important?
-
-#export -f amap map map_tuple
-
-#STOP="eval 'return 0 || exit 0'"
-#export STOP
-
-# covers sub-shell & local shell (e.g. source & . test.sh) exit cases
-#stop_cmd() { # example usage: $(stop_cmd)
-#    echo "return 0 2>/dev/null"
-#    echo "exit 0"
-#}
-#export -f stop_cmd
-#alias stop='$(stop_cmd)' # this only works when you source .bashrc
-# stop code: just use return 0 (since you usually do the . for executing scripts)
-#stop='$(stop_cmd)'
-#export stop
-#stop='return 0 2>/dev/null'$'\n'' exit 0'
-
-## where $1 is the real file name
-## & $2 shared file link (from google)
-## verified to work (1/4/19)
-#download_drive_file() {
-#    id=$(echo "$2" | sed 's/.*id=//')
-#    wget "https://drive.google.com/uc?authuser=0&id=${id}&export=download" -O $1
-#}
-
-## note: doesn't work currently
-## macro for help strings, must have defined 'usage' (help str)
-#alias if-h-then-usage='[ "$1" = "-h" ] && echo $usage'
-
-# NOTE: this workaround causes its own special case bug..., reverting to simpler version...
-#log() {
-#    # Before there were special cases where log would pass ITS OWN positional
-#    # arguments as the positional arguments to a script it would run 
-#    # (e.g. when no actual positional args were passed).
-#    all_args="$@" # NOTE: this still passes correct positional arguments fine
-#    echo $all_args
-#    set -- # removes all positional arguments
-#
-#    # braces allow for piping of same output to multiple files
-#    { $all_args 2> >(tee .err.log); } &> >(tee .out.log);
-#    echo; echo logged output to .err.log \& .out.log respectively;
-#}
-
-# makes default ping target google DNS server
-#ping() {
-#    if (($# < 2)); then
-#        ping 8.8.8.8
-#    else
-#        ping $@
-#    fi
-#}
-
-#rld() { # faster reload implementation
-#   . ~/.bashrc
-#   source ~/.profile &
-#   source ~/.bash_profile &
-#}
-#alias rld='. ~/.profile; . ~/.bash_profile; . ~/.bashrc'
