@@ -10,6 +10,8 @@ if [[ "$(which env_parallel 2>/dev/null)" ]]; then
     #alias parallel='env_parallel' # it's the same except a tad slower & exports the environment!! Totally worth it!
 fi
 
+#set -a 
+
 ##################### Redefinitions: #########################
 
 # NOTE: not an alias but remember: `killall` over~ `pkill -9`
@@ -25,8 +27,10 @@ alias cp='cp -r'
 alias scp='scp -r' # usually if you're scping a directory you should zip first...
 alias rsync='rsync -r --update --compress --progress' # rsync seems to be better than scp, and it works without compression
 alias ls='ls -ltrh --color=yes' # sort results with most recently modified first!
+#alias ls='ls -t --color=yes' # lighter version of ls
 alias lsz='du -hs * .??*' # gives you accurate measurements of size for **local directories** (& files), ls only does files
 alias grep='grep -ni'
+grepO() { sed -En "s/^.*$1.*$/\1/p"; } # like grep -o but only prints the 1st capture group
 alias ln='ln -s' # symbolic links are best, that's *why* they can point to dirs
 alias ssh='ssh -q'
 alias vi='vim'
@@ -43,19 +47,72 @@ alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new
 # also you can override any defaults just by specifying them again!
 # GOTCHA: apparently xargs doesn't work by default with bash functions?? Use new amap instead! 
 
-# IMPORTANT: entirety of amap_f could be replaced by this one-liner!!
-amap() { \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$1" _; }
-# It requires passing one string command argument and passing inputs line by line
-# For strings which should be split up you could do echo $ARGS | xargs -n$N_PER | amap_f 'cmd1 $1 | cmd2 $2 # etc...'
+benchmark() {
+    N=$1
+    for ((i=0; i<1000; i++)) {
+        N=$((N+1))
+    }
+    echo $N
+}
 
-amap1() { xargs -n1 | amap "$@" ; }
+## map + exporting env VARIABLES ONLY, in practice this is all that's needed and much faster
+#map() { (export $(compgen -v); \xargs -L1 bash -c "$1" _) ; }
+#map1() { \xargs -n1 | map "$@" ; } 
+#
+## amap + exporting env VARIABLES ONLY, in practice this is all that's needed and much faster
+#amap() { (export $(compgen -v); \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$1" _) ; }
+#amap1() { \xargs -n1 | amap "$@" ; }
 
-# Verified to work (on CCR): 5/23/24
-# NOTE: new version of amap which also inherets the entire shell-scope from the calling shell!
-amap_env() { (export $(compgen -v); \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$(declare -f);""$1" _) ; }
-# GOTCHA: actually this should be depreciated in favor of env_parallel which is a project that does everything you want and much more!
+# NOTE: lol I just realized that amap could've been written using a regular loop you'd just need to use `read` to get input lines (& thus get the multiple args per line)
 
-map_env() { (export $(compgen -v); \xargs -L1 bash -c "$(declare -f);""$1" _) ; }
+# All the functionality and more of amap_env + being faster than even amap!!
+# GOTCHA: the input arguments per line will have shell syntax evaluated which usually isn't a problem but w/e 
+amap_for() {
+    CMD="$1"
+    cmd_f() { eval "$CMD"; }
+    
+    set +m # disable montior mode (reporting "done" bg processes)
+    while read -r LINE; do
+        eval cmd_f "$LINE" &
+        # (( N>=N_CPUs*2 )) && wait -n # wait for first bg job to finish
+    done
+    wait
+    set -m
+}
+
+map_for() {
+  CMD="$1" # eval trick lets it take quoted args
+  cmd_f() { eval "$CMD"; }
+  while read -r LINE; do
+      eval cmd_f "$LINE"
+  done
+}
+
+# NOTE: these are the new versions of amap & map which are much faster than the old ones
+alias map='map_for' # map is now a synonym for map_for
+alias amap='amap_for' # amap is now a synonym for amap_for
+alias amap1='\xargs -n1 | amap_for'
+alias map1='\xargs -n1 | map_for'
+
+## Verified to work (on CCR): 5/23/24
+## NOTE: new version of amap which also inherets the entire shell-scope from the calling shell!
+#amap_env() { (export $(compgen -v); \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$(declare -f);""$1" _) ; }
+## GOTCHA: actually this should be depreciated in favor of env_parallel which is a project that does everything you want and much more!
+#map_env() { (export $(compgen -v); \xargs -L1 bash -c "$(declare -f);""$1" _) ; }
+
+## these new versions works in environments where the text from declared functions is too much
+amap_env() {
+    (export $(compgen -v); # export variables
+    set -a; source ~/.bash_aliases; set +a; # export functions
+    \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) $0 -c "$1" _) ;
+}
+#
+## this works in environments where the text from declared functions is too much
+#map_env() {
+#    (export $(compgen -v); # export variables
+#    set -a; source ~/.bash_aliases; set +a; # export functions
+#    \xargs -L1 bash -c "$1" _) ; 
+#}
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
 # Example xargs usage (1-node usage):
@@ -122,7 +179,7 @@ flat_ws() {
 flat_code_ws() {
     #NOTE: the leading backlash is needed to avoid using the alias
     echo flattening whitespace
-    \find . -regextype posix-extended -type f -regex ".*\.(c|cpp|h|py|sh|R|yaml)" | amap_env 'flat_ws $1' 
+    \find . -regextype posix-extended -type f -regex ".*\.(c|cpp|h|py|sh|R|yaml)" | amap 'flat_ws $1' 
     echo done!
 }
 
@@ -218,6 +275,17 @@ grbp() {
 ############# General Purpose & Unique Commands: #############
 ##############################################################
 
+# edits input to have zero padded ints
+zero_pad() {
+    N_ZERO_PAD=8
+    (( $# > 0 )) && N_ZERO_PAD=$1
+    sed -E ":r; s/(^|[^0-9])([0-9]{1,$((N_ZERO_PAD-1))})([^0-9]|$)/\10\2\3/g; t r"
+}
+
+zero_pad_files() {
+    (\xargs -n1 | amap 'mv "$1" "$(zero_pad <<< $1)"') <<< "$@"
+}
+
 alias kill_kids='pkill -P $$'
 alias jupyter2py='jupyter nbconvert --to script' #e.g. jupyter2py notebook.ipynb # (--> produces notebook.py)
 alias rm_bad_lns='\find . -xtype l -delete' # deletes broken links
@@ -266,9 +334,9 @@ quote_lines() {
 }
 
 # All Verified to work: 4/30/45
-under_score_name() { name=$(dirname "$@")/$(basename "$@" | tr ' ' '_'); [[ "${@}" != "$name" ]] && mv "${@}" "$name"; }
-under_score_directory() { \ls -1 "$@" | quote_lines | amap_env 'under_score_name "$1"' ; } # non-recursive!
-under_score_recursive() { \find . -not -path '*/.*' | sed '1d' | quote_lines | tac | map_env 'under_score_name "$1"'; } # dangerous!
+under_score_name() { name=$(dirname "$@")/$(basename "$@" | tr ' ' '_'); [[ "${@}" -ef "$name" ]] || mv "${@}" "$name"; }
+under_score_directory() { \ls -1 "$@" | quote_lines | amap 'under_score_name "$1"' ; } # non-recursive!
+under_score_recursive() { \find . -not -path '*/.*' | sed '1d' | quote_lines | tac | map 'under_score_name "$1"'; } # dangerous!
 # ^ idea here is find all non-hidden files, then exclude '.', then quote to fix apostrophes, then reverse the order & sequential map so that renaming top-level directories doesn't break other paths
 
 # drops all but most recent N files/folders in a directory
@@ -457,7 +525,7 @@ rand_factor_sample() {
 # IMPORTANT: works on everything EXCEPT abitrary categorial arugments,
 # those must be handled manually with rand_factor_sample() (above)
 auto_cli_perturb() {
-    auto_numeric_perturb() { sed -r 's/(--[A-z0-9-]+)[ =]([0-9.]+)/\1="$(rand_numeric_perturb \2)"/g'; }
+    auto_numeric_perturb() { sed -r 's/(--[A-z0-9-]+=| )([0-9.]+)( |$)/\1"$(rand_numeric_perturb \2)"\3/g'; } # handles --var=value and --var value cases
     _auto_flag_perturb() { sed -r 's/(--[A-z0-9-]+)( --|$)/"$(rand_factor_sample \1)"\2/g'; }
     auto_flag_perturb() { _auto_flag_perturb | _auto_flag_perturb; } # We x2 apply auto_flag_perturb b/c regex doesn't allow overlapping matches!!
     auto_bool_perturb() { sed -r 's/(True|False)/"$(rand_factor_sample True False)"/g'; }
@@ -466,7 +534,10 @@ auto_cli_perturb() {
     echo prev CLI args: "$@" >&2
     echo new CLI args: "$perturbed_cli" >&2
     echo "$perturbed_cli"
+    auto_numeric_perturb() { sed -r 's/(--[A-z0-9-]+)[ =]([0-9.]+)/\1="$(rand_numeric_perturb \2)"/g'; }
 } # P.S. Very nice property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1 
 
 # Important for subshells/job scripts!
 export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
+
+#set +a

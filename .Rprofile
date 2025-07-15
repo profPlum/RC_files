@@ -1,3 +1,5 @@
+options(scipen = -2)
+options(digits = 4)
 options(readr.read_lazy = TRUE) # this should be optimal in R because it only fails on windows
 
 no_attrs = function(x) {

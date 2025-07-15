@@ -99,20 +99,6 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # Set PATH, MANPATH, etc., for Homebrew.
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-# Alias definitions.
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
-
-sed() { # turn off mac OS BS related to sed
-    if [[ $1 == -i ]]; then
-        shift
-        /usr/bin/sed -i'' $@
-    else
-        /usr/bin/sed "$@"
-    fi
-}
-
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
 # sources /etc/bash.bashrc).
@@ -129,9 +115,18 @@ fi
 export PATH="/Users/dwyerdeighan/miniforge3/condabin:$PATH"
 export PATH="$PATH:/Users/dwyerdeighan/Library/Python/3.8/bin"
 
-alias stat='stat -x'
+# turn off Mac BS inconsistencies with GNU
+alias stat='stat -x' # -x shows all timestamp info
+alias sed='gsed' # gsed=gnu-sed (from home-brew)
+
 alias pip='python3 -m pip'
 alias python='python3'
+
+# Alias definitions.
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
 alias dt='cd ~/Desktop'
 alias dl='cd ~/Downloads'
 alias docs='cd ~/Documents'
@@ -235,6 +230,7 @@ ALL_LISTENING_PORTS='-L 7860:127.0.0.1:7860 -L 6006:127.0.0.1:6006 -L 6007:127.0
 alias fawkes="ssh $FAWKES_HOST -X $ALL_LISTENING_PORTS -L 8080:127.0.0.1:8080" 
 alias bu="ssh $BU_HOST -X $ALL_LISTENING_PORTS" 
 alias ccr="ssh $CCR_HOST -X" # -L 6006:127.0.0.1:6006" # -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890"
+alias delta='ssh ddeighan@dtai-login.delta.ncsa.illinois.edu'
 
 alias cclean='rm -rf CMakeCache.txt CMakeFiles _deps Makefile'
 alias date='gdate'

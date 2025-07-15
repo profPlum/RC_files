@@ -4,11 +4,16 @@
 " this remaps alt+<Right> -> f -> w(ord)
 " word is the command to go forward with word skip
 map f w
+
+" ctrl+A=start and ctrl+E=end shortcuts
+map <C-A> <Home>
+map <C-E> <End>
+
 "map <S-Left> <Home>
 "map <S-Right> <End>
 
-map <C-A> <Home>
-map <C-E> <End>
+"" enables mouse scrolling & selection
+" set mouse=a
 
 " automatically fold based on syntax/language being used!
 set foldmethod=indent "syntax
