@@ -3,5 +3,6 @@ auto_activate_base: false
 channels:
   - defaults
   - conda-forge
-channel_priority: strict
+channel_priority: flexible
 pip_interop_enabled: true
+solver: libmamba
