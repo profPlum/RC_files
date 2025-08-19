@@ -118,6 +118,7 @@ export PATH="$PATH:/Users/dwyerdeighan/Library/Python/3.8/bin"
 # turn off Mac BS inconsistencies with GNU
 alias stat='stat -x' # -x shows all timestamp info
 alias sed='gsed' # gsed=gnu-sed (from home-brew)
+alias date='gdate'
 
 alias pip='python3 -m pip'
 alias python='python3'
@@ -233,7 +234,6 @@ alias ccr="ssh $CCR_HOST -X" # -L 6006:127.0.0.1:6006" # -L 8888:127.0.0.1:8888 
 alias delta='ssh ddeighan@dtai-login.delta.ncsa.illinois.edu'
 
 alias cclean='rm -rf CMakeCache.txt CMakeFiles _deps Makefile'
-alias date='gdate'
 
 #########################################################
 # UPDATE: Actually turns out bracketed paste mode is really important & seems to be working now 10/23/23

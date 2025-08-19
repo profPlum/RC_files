@@ -2,6 +2,8 @@ options(scipen = -2)
 options(digits = 4)
 options(readr.read_lazy = TRUE) # this should be optimal in R because it only fails on windows
 
+std_to_mad_coef = sqrt(2/pi) # for normal distributions
+
 no_attrs = function(x) {
     attributes(x) = NULL
     return(x)
