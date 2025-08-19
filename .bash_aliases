@@ -101,6 +101,7 @@ alias map1='\xargs -n1 | map_for'
 #map_env() { (export $(compgen -v); \xargs -L1 bash -c "$(declare -f);""$1" _) ; }
 
 ## these new versions works in environments where the text from declared functions is too much
+## NOTE: here for legacy reasons, in most cases amap_for should be faster & have less edge cases
 amap_env() {
     (export $(compgen -v); # export variables
     set -a; source ~/.bash_aliases; set +a; # export functions
@@ -283,7 +284,8 @@ zero_pad() {
 }
 
 zero_pad_files() {
-    (\xargs -n1 | amap 'mv "$1" "$(zero_pad <<< $1)"') <<< "$@"
+    mv_quiet() { [[ "$1" != "$2" ]] && mv "$1" "$2" ; } # silences only trivial errors (i.e. mv $1 $1=err)
+    (\xargs -n1 | amap 'mv_quiet "$1" "$(zero_pad <<< $1)"') <<< "$@"
 }
 
 alias kill_kids='pkill -P $$'
@@ -492,23 +494,34 @@ rep() {
 # Idea is to use on python CLI call for rand Hparam search on HPC.
 # Then use some other logging functionality + R to find best Hparams.
 
+## GOTCHA: previous rand_numeric_perturb was biased upwards i.e. E_R[p(R;a)]>a
+## These R function alleviate the problem by normalizing the expectation:
+#p = function(a, s=0.3, N=1000, R=runif(N)) a**(s*(2*R-1)+1) # original p
+#E_p = function(a, s=0.3) (a**(1+s)-a**(1-s))/(s*log(a)*2) # E[p]
+#p2 = function(a, s=0.3, ...) p(a, s=s, ...)*(a/E_p(a, s=s)) # p(R; a)*(a/E[p])
+
+
 # Adds slight pertubation to numeric CLI arg e.g.
 # "... --some-hparam=$(rand_numeric_perturb 3.14) ..."
 # Verified to work on 10/30/23 (with ks.test & old/new systems)
 NUM_PERTURB_SPREAD=0.3 # Awesome property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1
 rand_numeric_perturb() {
-    N=4096 # granularity of random coefficient
-    scale="scale=16;" # precision of floating point ops
-    min=$(echo "$scale l($1)*(1-$NUM_PERTURB_SPREAD)" | bc -l)
-    max=$(echo "$scale l($1)*(1+$NUM_PERTURB_SPREAD)" | bc -l)
-    runif="($((RANDOM % N))/$N)" # random coefficient between 0 & 1
-    bc_cmd="$scale e(($max - $min) * $runif + $min)"
-    perturbed_number=$(echo "$bc_cmd" | bc -l)
- 
+    # compute expectation and bias correction constant (ensures E[perturbed]=arg)
+    s="$NUM_PERTURB_SPREAD" # convenience
+    expected_value_of_perturbation="((e(l($1)*(1+$s))-e(l($1)*(1-$s)))/(2*$s*l($1)))" # E[p]
+    bias_correction_constant="($1/$expected_value_of_perturbation)" # a/E[p]
+
+    min="(l($1)*(1-$s))"
+    max="(l($1)*(1+$s))"
+    runif="($RANDOM/32767)" # random coefficient between 0 & 1
+    perturbed_number="e(($max - $min) * $runif + $min)"
+    #perturbed_number="e(l($1)*($s*(2*$runif - 1)+1))" # simpler, but less numerically stable apparently...
+    perturbed_number=$(echo "scale=16; $perturbed_number*$bias_correction_constant" | bc -l)
+
     # truncate to int if original argument is also an int
     ! [[ "$1" =~ \. ]] && perturbed_number="${perturbed_number%%.*}"
     echo $perturbed_number
-} # P.S. NOTE: final form of perturbed arg is arg^(NUM_PERTURB_SPREAD*(2*(R~U(0,1))-1)+1)
+} # P.S. NOTE: final form of (biased) perturbed arg is arg^(NUM_PERTURB_SPREAD*(2*(R~U(0,1))-1)+1)
 
 # Very useful for True/False & various other categorical args
 # e.g. cmd --env=$(rand_factor_sample $env_names), or
@@ -522,8 +535,8 @@ rand_factor_sample() {
 
 # Verified to work 10/31/23
 # Automatically perturbs given (valid) CLI args, e.g. for Hparam search!
-# IMPORTANT: works on everything EXCEPT abitrary categorial arugments,
-# those must be handled manually with rand_factor_sample() (above)
+# IMPORTANT: works on everything (e.g. bool/int/float) EXCEPT abitrary categorial 
+# arugments, those must be handled manually with rand_factor_sample() (above)
 auto_cli_perturb() {
     auto_numeric_perturb() { sed -r 's/(--[A-z0-9-]+=| )([0-9.]+)( |$)/\1"$(rand_numeric_perturb \2)"\3/g'; } # handles --var=value and --var value cases
     _auto_flag_perturb() { sed -r 's/(--[A-z0-9-]+)( --|$)/"$(rand_factor_sample \1)"\2/g'; }
@@ -539,5 +552,6 @@ auto_cli_perturb() {
 
 # Important for subshells/job scripts!
 export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
+export NUM_PERTURB_SPREAD
 
 #set +a
