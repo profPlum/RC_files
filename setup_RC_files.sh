@@ -7,3 +7,4 @@ rm ~/.vimrc ~/.inputrc ~/.condarc ~/.bash_aliases ~/.Rprofile
 \ln .condarc ~
 \ln .bash_aliases ~
 \ln .Rprofile ~
+source ~/.bash_aliases

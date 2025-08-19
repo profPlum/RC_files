@@ -8,10 +8,10 @@ download_drive_file_by_id() {
 
 cd ~
 rm .vimrc .inputrc .bash_aliases .Rprofile .condarc
-download_drive_file_by_id .vimrc 1PnBMvrwFeAnI5asaI7ndYGxd6mDGszx5
-download_drive_file_by_id .Rprofile 14Txp18eXWK5Oia0csYtbH9TYtMinP_sN
-download_drive_file_by_id .inputrc 1b7vHr68vqCliHY-4mHFGlrImrNKbZbCZ
-download_drive_file_by_id .bash_aliases 1Ra27BW-S40xy00xzSkxW4Hzpcf31IPsY
-download_drive_file_by_id .condarc 14JU5hRNZvXC3QJjkzYSSslpo4J9m07Kk
+download_drive_file_by_id .vimrc 1wVMJOmwGhZQ6s4Iey32_ePGQp4bYALvr
+download_drive_file_by_id .Rprofile 1UXaTsbYH1rTNa_NXWGuGKs1DF4AMRNR9
+download_drive_file_by_id .inputrc 1rR38HENhetGgdlPxTC5BGaIhiT1uyaDN
+download_drive_file_by_id .bash_aliases 1_eFiLZHnRfGoKdStORoSKVXCybWdf7e6
+download_drive_file_by_id .condarc 1RjHir3xAM3Yi6jIyFufwmRtqnSx1MGlu
 
 . .bash_aliases
