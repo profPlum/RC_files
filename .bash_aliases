@@ -10,7 +10,7 @@ if [[ "$(which env_parallel 2>/dev/null)" ]]; then
     #alias parallel='env_parallel' # it's the same except a tad slower & exports the environment!! Totally worth it!
 fi
 
-#set -a 
+#set -a
 
 ##################### Redefinitions: #########################
 
@@ -42,10 +42,10 @@ alias expand='expand -t 4'
 alias tail='tail -n 30'
 alias head='head -n 30'
 N_CPUs="$(getconf _NPROCESSORS_ONLN)" # gets number of cpus on mac & linux!
-alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new amap is likely more useful 
+alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new amap is likely more useful
 # ^ NOTE: -n1 means 1 arg per new call (quote aware), -PN means use N parallel processes,
 # also you can override any defaults just by specifying them again!
-# GOTCHA: apparently xargs doesn't work by default with bash functions?? Use new amap instead! 
+# GOTCHA: apparently xargs doesn't work by default with bash functions?? Use new amap instead!
 
 benchmark() {
     N=$1
@@ -57,7 +57,7 @@ benchmark() {
 
 ## map + exporting env VARIABLES ONLY, in practice this is all that's needed and much faster
 #map() { (export $(compgen -v); \xargs -L1 bash -c "$1" _) ; }
-#map1() { \xargs -n1 | map "$@" ; } 
+#map1() { \xargs -n1 | map "$@" ; }
 #
 ## amap + exporting env VARIABLES ONLY, in practice this is all that's needed and much faster
 #amap() { (export $(compgen -v); \xargs -L1 -P $(getconf _NPROCESSORS_ONLN) bash -c "$1" _) ; }
@@ -66,11 +66,11 @@ benchmark() {
 # NOTE: lol I just realized that amap could've been written using a regular loop you'd just need to use `read` to get input lines (& thus get the multiple args per line)
 
 # All the functionality and more of amap_env + being faster than even amap!!
-# GOTCHA: the input arguments per line will have shell syntax evaluated which usually isn't a problem but w/e 
+# GOTCHA: the input arguments per line will have shell syntax evaluated which usually isn't a problem but w/e
 amap_for() {
     CMD="$1"
     cmd_f() { eval "$CMD"; }
-    
+
     set +m # disable montior mode (reporting "done" bg processes)
     while read -r LINE; do
         eval cmd_f "$LINE" &
@@ -112,7 +112,7 @@ amap_env() {
 #map_env() {
 #    (export $(compgen -v); # export variables
 #    set -a; source ~/.bash_aliases; set +a; # export functions
-#    \xargs -L1 bash -c "$1" _) ; 
+#    \xargs -L1 bash -c "$1" _) ;
 #}
 
 # IMPORTANT: amap is the most GENERAL method for launch multi-node jobs on arbitrary job scheduler systems
@@ -154,7 +154,7 @@ alias cda='conda deactivate' # conda deactivate, needs this twice or undefined b
 alias cie='conda env create -f' # conda import env
 alias cee='conda env export --no-builds >' # conda export env
 alias cre='conda env remove -n' # conda remove env
-alias cce='conda create -n' # conda create env 
+alias cce='conda create -n' # conda create env
 #alias ccp='conda create --name myclone --clone myenv
 # ^ remember to use --clone NAME when you want to clone one
 
@@ -180,7 +180,7 @@ flat_ws() {
 flat_code_ws() {
     #NOTE: the leading backlash is needed to avoid using the alias
     echo flattening whitespace
-    \find . -regextype posix-extended -type f -regex ".*\.(c|cpp|h|py|sh|R|yaml)" | amap 'flat_ws $1' 
+    \find . -regextype posix-extended -type f -regex ".*\.(c|cpp|h|py|sh|R|yaml|js)" | amap 'flat_ws $1'
     echo done!
 }
 
@@ -198,6 +198,7 @@ ga() { # no args = update
     $cmd $@ # git add
 }
 alias gl='git log'
+alias gvc='git show' # git view commit (changes & commit message)
 alias gr='git reset'
 # v Idea is: similar to 'gist' & still longer to spell than gs
 alias gst='git status'
@@ -208,7 +209,7 @@ gc() {
     root="$(git rev-parse --show-toplevel)"
     \cd "$root"
     flat_ws $(git diff --name-only --cached | \grep -E ".*\.(c|cpp|h|py|sh|R|yaml)$")
-    git add $(git diff --name-only --cached)    
+    git add $(git diff --name-only --cached)
     \cd -
     git commit
 }
@@ -222,7 +223,7 @@ alias gca='git commit --amend'
 alias gfrb="git fetch; git rebase" # when local branch is stale
 alias fcon='grep -n ">>>>"' # find git conflicts
 alias hdif='git diff HEAD --' # diff with head (with no arg acts on entire repo)
-# IMPORTANT: hdif > stash.patch, create a PATCH FILE from local changes! --> then do: `git apply stash.patch` 
+# IMPORTANT: hdif > stash.patch, create a PATCH FILE from local changes! --> then do: `git apply stash.patch`
 
 # discard file/repo changes
 # (with no args acts on entire repo)
@@ -235,42 +236,11 @@ gch() {
     fi
 }
 
-# git view commit (changes)
-gvc() {
-    git diff $1~1 $1;
-}
-
 # git push new branch (for pushing new branches to origin)
 gpnb() {
     branch_name=$(git rev-parse --abbrev-ref HEAD)
     echo branch name: $branch_name
     git push --set-upstream origin $branch_name
-}
-
-# verified to work on 10/19/18, made sure that
-# it doesn't continue if merging is required
-grbp() {
-    echo "stashing changes"
-    stash_msg="$(git stash)"
-
-    # we don't continue if merging needs to happen
-    needs_merge=$(echo $stash_msg | grep -i 'needs merge')
-    if [ "$needs_merge" != "" ]; then
-        echo error: $stash_msg
-        return 1 # this value needs to be positive
-    fi
-
-    # back 10 incase of rebases
-    git reset --hard HEAD~10
-    git pull
-
-    # if there were local changes that
-    # were stashed then reapply them
-    no_local_changes=$(echo $stash_msg | grep -i 'No local changes to save')
-    if [ "$no_local_changes" = "" ]; then
-        echo "reapplying stash"
-        git stash pop
-    fi
 }
 
 ############# General Purpose & Unique Commands: #############
@@ -322,8 +292,7 @@ sd() { sed -E "s|$1|$2|g"; }
 
 # Verified to work: 4/30/25
 # USAGE: quote "let's quote this\!" --> 'let\\'s quote this\!'
-quote()
-{   
+quote() {
     local quoted=${@//\'/\'\\\'\'};
     printf "'%s'\n" "$quoted"
 }
@@ -341,13 +310,17 @@ under_score_directory() { \ls -1 "$@" | quote_lines | amap 'under_score_name "$1
 under_score_recursive() { \find . -not -path '*/.*' | sed '1d' | quote_lines | tac | map 'under_score_name "$1"'; } # dangerous!
 # ^ idea here is find all non-hidden files, then exclude '.', then quote to fix apostrophes, then reverse the order & sequential map so that renaming top-level directories doesn't break other paths
 
+# test if first argument is an integer
+is_int() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+
 # drops all but most recent N files/folders in a directory
 keep_last_N_files() {
     n_keep=$1
-    if (( $# > 1)); then
-        dir="$2"
-    else
-        dir=.
+    (( $# > 1)) && dir="$2" || dir=. # if-else
+
+    if ! [[ "$n_keep" =~ ^[0-9]+$ ]] || (($#==0)) || [[ $1 == -h ]]; then
+        echo usage: keep_last_N_files N \[path\]
+        return 0
     fi
 
     echo N=$n_keep, dir=$dir, pwd=$(pwd)
@@ -361,9 +334,9 @@ keep_last_N_files() {
 
     if ((n_total<=n_keep)); then
         echo nothing to do... exiting
-        return 0 || exit 0
+        return 0
     fi
-    
+
     files=$(echo "$files" | \tail -n $n_drop)
     echo files to drop:
     echo "$files"
@@ -446,11 +419,11 @@ get_access_date() {
 }
 
 # split input args (string) on characters (e.g. 12 --> 1 2)
-str_split() { echo "$@" | fold -w1 | xargs -n 5000 echo; } 
+str_split() { echo "$@" | fold -w1 | xargs -n 5000 echo; }
 str_concat() { echo "$@" | sed -r 's| ||g'; }
 
 # Verified to work: 11/10/23
-# This function builds a regex pattern which matches 
+# This function builds a regex pattern which matches
 # integers between 0-$1 (inclusive/exclusive like python range())
 _regex_number_range() { x=$(seq $1 $2 | tr '\n' '|'); echo "(?<![0-9eE.-])(?:${x%%|$2|})(?![0-9eE.])"; }
 regex_number_range() {
@@ -460,7 +433,6 @@ regex_number_range() {
     fi
     echo $(_regex_number_range $start $1)
 }
-
 
 rev() { # like R function, reverses order of arguments
     for (( i=$#;i>0;i-- )); do
@@ -479,7 +451,7 @@ rep0() {
     done
     echo "$output"
 }
- 
+
 # simple tool much like in R
 # e.g. `map rand_numeric_perturb $(rep 1000 2)`,
 # echo $(rep 5 "'1 2 3'") --> '1 2 3' '1 2 3'...
@@ -535,7 +507,7 @@ rand_factor_sample() {
 
 # Verified to work 10/31/23
 # Automatically perturbs given (valid) CLI args, e.g. for Hparam search!
-# IMPORTANT: works on everything (e.g. bool/int/float) EXCEPT abitrary categorial 
+# IMPORTANT: works on everything (e.g. bool/int/float) EXCEPT abitrary categorial
 # arugments, those must be handled manually with rand_factor_sample() (above)
 auto_cli_perturb() {
     auto_numeric_perturb() { sed -r 's/(--[A-z0-9-]+=| )([0-9.]+)( |$)/\1"$(rand_numeric_perturb \2)"\3/g'; } # handles --var=value and --var value cases
@@ -548,7 +520,7 @@ auto_cli_perturb() {
     echo new CLI args: "$perturbed_cli" >&2
     echo "$perturbed_cli"
     auto_numeric_perturb() { sed -r 's/(--[A-z0-9-]+)[ =]([0-9.]+)/\1="$(rand_numeric_perturb \2)"/g'; }
-} # P.S. Very nice property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1 
+} # P.S. Very nice property: as long as 0<NUM_PERTURB_SPREAD<1 can't convert 0 < float < 1 --> float > 1
 
 # Important for subshells/job scripts!
 export -f auto_cli_perturb rand_factor_sample rand_numeric_perturb
