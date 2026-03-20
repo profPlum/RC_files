@@ -113,7 +113,6 @@ fi
 ############# MY STUFF #############
 
 export PATH="/Users/dwyerdeighan/miniforge3/condabin:$PATH"
-export PATH="$PATH:/Users/dwyerdeighan/Library/Python/3.8/bin"
 
 # turn off Mac BS inconsistencies with GNU
 alias stat='stat -x' # -x shows all timestamp info
@@ -143,7 +142,7 @@ alias init_kerberos='pkinit dfire; kinit dfire'
 alias warhawk='ssh dfire@warhawk.afrl.hpc.mil # login with kerberized ssh'
 alias mustang='ssh dfire@mustang.afrl.hpc.mil # login with kerberized ssh'
 alias blackbird='ssh dfire@blackbird.afrl.hpc.mil # login with kerberized ssh'
-#export PATH="/usr/local/krb5/bin:$PATH"  # for kerberos (Airforce HPC) 
+#export PATH="/usr/local/krb5/bin:$PATH"  # for kerberos (Airforce HPC)
 #:/usr/local/ossh/bin:$PATH" # for kerberos (Airforce HPC)
 
 GUI_HOST="deep-learning-12c85r1a100-dwyer-0-vm"
@@ -155,20 +154,20 @@ GUI_HOST="deep-learning-12c85r1a100-dwyer-0-vm"
 #GCLOUD_USER=$USER # not necessarily true always
 #start-gcloud() {
 #    echo $'NOTE: Once started use: \'ssh GCLOUD_HOST\' to connect!\n'
-#    
+#
 #    # we need to store this cmd as a string because apparently aliases produce strange errors in this context
 #    start_gcloud_cmd="gcloud beta compute instances start $GCLOUD_HOST"
 #    $start_gcloud_cmd # we run it redundantly here to show output & to ensure it really is started (it often takes 2 or more tries...)
 #    IP="$($start_gcloud_cmd 2>&1 | grep -i 'external IP')" # isolate line that shows external IP address
 #    IP="${IP##*IP is }" # removes: "[...] External IP is " to isolate IP
 #
-#    # This is entire host configuration for GCLOUD_HOST, EXCEPT the IP address which is updated dynamically 
+#    # This is entire host configuration for GCLOUD_HOST, EXCEPT the IP address which is updated dynamically
 #    GCLOUD_HOST_CFG_STR=$'Host GCLOUD_HOST\n\tIdentityFile ~/.ssh/google_compute_engine\n\tUser '"$GCLOUD_USER"$'\n\tGSSAPIAuthentication no\n\tGSSAPIDelegateCredentials yes'
 #    echo "$GCLOUD_HOST_CFG_STR" > ~/.ssh/gcloud_host_cfg
 #    echo $'\tHostName '"$IP" >> ~/.ssh/gcloud_host_cfg
 #    # This host config is loading with an Include statement in main ssh 'config'
 #
-#    # Install gcloud_host_cfg into main .ssh config (if needed) 
+#    # Install gcloud_host_cfg into main .ssh config (if needed)
 #    #include_cmd="$(grep "Include gcloud_host_cfg" ~/.ssh/config)"
 #    #[ "$include_cmd"="" ] & echo "Include gcloud_host_cfg" >> ~/.ssh/config
 #}
@@ -228,9 +227,9 @@ CCR_HOST='dwyerdei@vortex.ccr.buffalo.edu'
 
 ALL_LISTENING_PORTS='-L 7860:127.0.0.1:7860 -L 6006:127.0.0.1:6006 -L 6007:127.0.0.1:6007 -L 6008:127.0.0.1:6008 -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890 -L 8891:127.0.0.1:8891 -L 8892:127.0.0.1:8892 -L 8893:127.0.0.1:8893'
 
-alias fawkes="ssh $FAWKES_HOST -X $ALL_LISTENING_PORTS -L 8080:127.0.0.1:8080" 
-alias bu="ssh $BU_HOST -X $ALL_LISTENING_PORTS" 
-alias ccr="ssh $CCR_HOST -X" # -L 6006:127.0.0.1:6006" # -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890"
+alias fawkes="ssh $FAWKES_HOST $ALL_LISTENING_PORTS -L 8080:127.0.0.1:8080"
+alias bu="ssh $BU_HOST  $ALL_LISTENING_PORTS"
+alias ccr="ssh $CCR_HOST" # -L 6006:127.0.0.1:6006" # -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890"
 alias delta='ssh ddeighan@dtai-login.delta.ncsa.illinois.edu'
 
 alias cclean='rm -rf CMakeCache.txt CMakeFiles _deps Makefile'
