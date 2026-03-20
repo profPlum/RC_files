@@ -20,6 +20,10 @@ set foldmethod=indent "syntax
 set hlsearch
 " highlight search
 
+" ensure we always look back 500 lines for syntax context
+autocmd Syntax * syntax sync minlines=500
+set redrawtime=5000 " give the engine enough time to actually process those 500 lines
+
 "set smartindent " Do smart indenting when starting a new line
 "set autoindent  " Copy indent from current line, over to the new line
 filetype plugin indent on " better than smart or auto-indent
@@ -30,6 +34,11 @@ set ts=4 sts=4 sw=4 expandtab
 " see: http://vimcasts.org/episodes/tabs-and-spaces/
 syntax on
 colorscheme desert
+
+" ensure we always look back 500 lines for syntax context
+autocmd Syntax * syntax sync minlines=500 
+set redrawtime=5000 " give the engine enough time to actually process those 500 lines
+" syn sync fromstart # vim command to sync syntax doesn't work in vimrc...
 
 set backspace=indent,eol,start  " more powerful backspacing
 
