@@ -20,10 +20,6 @@ set foldmethod=indent "syntax
 set hlsearch
 " highlight search
 
-" ensure we always look back 500 lines for syntax context
-autocmd Syntax * syntax sync minlines=500
-set redrawtime=5000 " give the engine enough time to actually process those 500 lines
-
 "set smartindent " Do smart indenting when starting a new line
 "set autoindent  " Copy indent from current line, over to the new line
 filetype plugin indent on " better than smart or auto-indent
