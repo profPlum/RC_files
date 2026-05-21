@@ -220,6 +220,7 @@ clang-format-inplace() {
     mv "$1.formatted" $1
 }
 
+DELTA_HOST='ddeighan@dtai-login.delta.ncsa.illinois.edu'
 FAWKES_HOST='dwyerdei@fawkes.cse.buffalo.edu'
 BU_HOST='dwyerdei@catesby.cse.buffalo.edu'
 CCR_HOST='dwyerdei@vortex.ccr.buffalo.edu'
@@ -228,9 +229,9 @@ CCR_HOST='dwyerdei@vortex.ccr.buffalo.edu'
 ALL_LISTENING_PORTS='-L 7860:127.0.0.1:7860 -L 6006:127.0.0.1:6006 -L 6007:127.0.0.1:6007 -L 6008:127.0.0.1:6008 -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890 -L 8891:127.0.0.1:8891 -L 8892:127.0.0.1:8892 -L 8893:127.0.0.1:8893'
 
 alias fawkes="ssh $FAWKES_HOST $ALL_LISTENING_PORTS -L 8080:127.0.0.1:8080"
-alias bu="ssh $BU_HOST  $ALL_LISTENING_PORTS"
+alias bu="ssh $BU_HOST $ALL_LISTENING_PORTS"
 alias ccr="ssh $CCR_HOST" # -L 6006:127.0.0.1:6006" # -L 8888:127.0.0.1:8888 -L 8889:127.0.0.1:8889 -L 8890:127.0.0.1:8890"
-alias delta='ssh ddeighan@dtai-login.delta.ncsa.illinois.edu'
+alias delta="ssh $DELTA_HOST"
 
 alias cclean='rm -rf CMakeCache.txt CMakeFiles _deps Makefile'
 
