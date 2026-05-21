@@ -26,7 +26,8 @@ alias watch='watch -n 1' # this checks status, which never takes too much cpu
 alias cp='cp -r'
 alias scp='scp -r' # usually if you're scping a directory you should zip first...
 alias rsync='rsync -r --update --compress --progress' # rsync seems to be better than scp, and it works without compression
-alias ls='ls -ltrh --color=yes' # sort results with most recently modified first!
+lsl() { \ls -ltrh --color=yes "$@" | cat -n; } # sort results with most recently modified first! also show file index (for easy counting)
+alias ls='lsl'
 #alias ls='ls -t --color=yes' # lighter version of ls
 alias lsz='du -hs * .??*' # gives you accurate measurements of size for **local directories** (& files), ls only does files
 alias grep='grep -ni'
@@ -372,7 +373,9 @@ mkcd() { mkdir $1; cd $1; }
 zd() { zip -r "$1".zip "$1"; } # zip dir
 
 # NOTE: request interactive slurm shell --> salloc cmd
-alias swatch-me="watch \"squeue --me -S S --format='%.10i %.9P %.40j %.8T %.10M %.9l %.6D %.18R'\""
+_SQUEUE_FORMAT='%.10i %.9P %.55j %.8T %.10M %.9l %.6D %.18R'
+alias squeue="squeue -S S --format='$_SQUEUE_FORMAT'"
+alias swatch-me="watch \"squeue --me -S S --format='$_SQUEUE_FORMAT'\""
 # slurm watch me + better formatting (tested better formatting on CCR 10/11/23)
 
 # logs command output!
