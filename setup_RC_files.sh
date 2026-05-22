@@ -5,6 +5,8 @@
 # * auto-updates once installed
 # * installs repo into ~/.RC_files
 # * can be used on mac to setup RC file links (but still requires manual mac.bashrc link)
+# * GOTCHA: major weakness is that it requires explicit commits also it can cause automatic accidental git conflicts
+# P.S. If you were to fully embrace this appraoch you could remove it from google drive which removes some of the special cases...
 
 # This is the directory of this bash script!
 source_dir=$(dirname "$(realpath $BASH_SOURCE)") # Verified to work: 5/21/26
