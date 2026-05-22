@@ -25,7 +25,6 @@ for RC_file in $RC_file_list; do
     rm ~/$RC_file
     \ln -s "$source_dir_relative/$RC_file" ~
 done
-source ~/.bash_aliases # import bash aliases for immediate use
 
 if [[ "$(uname)" == Darwin ]]; then
     echo mac detected! installing mac.bashrc...
@@ -33,9 +32,9 @@ if [[ "$(uname)" == Darwin ]]; then
     \ln -s "$source_dir_relative/mac.bashrc" ~/.bashrc
 fi
 
-# delete any previous auto-update line(s)
-\sed '/echo Updating \.RC_files.*/d' ~/.bashrc > /tmp/.bashrc_clean
-cat /tmp/.bashrc_clean > ~/.bashrc
-
 echo installing auto-update to .bashrc...
+\sed '/echo Updating \.RC_files.*/d' ~/.bashrc > /tmp/.bashrc_clean
+cat /tmp/.bashrc_clean > ~/.bashrc # delete any previous auto-update line(s)
 echo "echo Updating .RC_files...; (\\cd '$source_dir'; git pull) # keep RC_files up to date" >> ~/.bashrc
+
+source ~/.bash_aliases # import bash aliases for immediate use
