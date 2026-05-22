@@ -247,6 +247,9 @@ gpnb() {
 ############# General Purpose & Unique Commands: #############
 ##############################################################
 
+# simple shortcut for commiting recent RC file edits
+alias rc_commit='\cd ~/.RC_files; git add .; git commit; git push'
+
 # edits input to have zero padded ints
 zero_pad() {
     N_ZERO_PAD=8
