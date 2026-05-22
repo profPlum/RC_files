@@ -248,7 +248,7 @@ gpnb() {
 ##############################################################
 
 # simple shortcut for commiting recent RC file edits
-alias rc_commit='\cd ~/.RC_files; git add .; git commit; git push'
+alias rc_commit='\cd ~/.RC_files; hdif; sleep 2; git add .; git commit; git push'
 
 # edits input to have zero padded ints
 zero_pad() {
