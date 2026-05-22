@@ -242,4 +242,4 @@ eval $(ssh-agent -s)
 # Set PATH, MANPATH, etc., for Homebrew.
 eval "$(/opt/homebrew/bin/brew shellenv)"
 . `which env_parallel.bash`
-echo Updating .RC_files...; (\cd '/Users/dwyerdeighan/Library/CloudStorage/GoogleDrive-dwyerfire@gmail.com/My Drive/Customizations/RC_files'; git stash &> /dev/null; git pull &> /dev/null; git stash apply) # keep RC_files up to date
+echo Updating .RC_files...; (\cd '/Users/dwyerdeighan/Library/CloudStorage/GoogleDrive-dwyerfire@gmail.com/My Drive/Customizations/RC_files'; git pull) # keep RC_files up to date

@@ -38,4 +38,4 @@ fi
 cat /tmp/.bashrc_clean > ~/.bashrc
 
 echo installing auto-update to .bashrc...
-echo "echo Updating .RC_files...; (\\cd '$source_dir'; git stash &> /dev/null; git pull &> /dev/null; git stash apply) # keep RC_files up to date" >> ~/.bashrc
+echo "echo Updating .RC_files...; (\\cd '$source_dir'; git pull) # keep RC_files up to date" >> ~/.bashrc
