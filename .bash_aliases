@@ -43,7 +43,7 @@ alias expand='expand -t 4'
 alias tail='tail -n 30'
 alias head='head -n 30'
 N_CPUs="$(getconf _NPROCESSORS_ONLN)" # gets number of cpus on mac & linux!
-alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new amap is likely more useful
+#alias xargs="xargs -n1 -P$(getconf _NPROCESSORS_ONLN)" # xargs is useful but new amap is likely more useful
 # ^ NOTE: -n1 means 1 arg per new call (quote aware), -PN means use N parallel processes,
 # also you can override any defaults just by specifying them again!
 # GOTCHA: apparently xargs doesn't work by default with bash functions?? Use new amap instead!
@@ -170,6 +170,7 @@ git config --global rerere.enabled 1
 git config --global rerere.autoupdate true
 [ $(which vim) ] && git config --global core.editor "vim"
 git config --global core.filemode false # prevents "file mode changes" from clogging git status
+git config --global commit.verbose true # shows hdif inside commit window
 
 # Very useful! Clears all meta data & output bloat that accumulates in jupyter notebooks
 alias clean_jupyter='jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True --to=notebook --inplace'
@@ -206,13 +207,14 @@ alias gst='git status'
 alias gs='git stash'
 alias gsa='git stash apply'
 #alias gc='git commit'
-gc() {
+gc() { # git commit
+    echo flattening whitespace...
     root="$(git rev-parse --show-toplevel)"
     \cd "$root"
     flat_ws $(git diff --name-only --cached | \grep -E ".*\.(c|cpp|h|py|sh|R|yaml)$")
     git add $(git diff --name-only --cached)
     \cd -
-    git commit
+    git commit "$@" # you can include args like -v
 }
 
 alias gco='git checkout'
@@ -248,7 +250,7 @@ gpnb() {
 ##############################################################
 
 # simple shortcut for commiting recent RC file edits
-alias rc_commit='\cd ~/.RC_files; hdif; sleep 2; git add .; git commit; git push'
+alias rc_commit='\cd ~/.RC_files; git add .; git commit -v; git push'
 
 # edits input to have zero padded ints
 zero_pad() {
