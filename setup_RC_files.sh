@@ -33,8 +33,8 @@ if [[ "$(uname)" == Darwin ]]; then
 fi
 
 echo installing auto-update to .bashrc...
-\sed '/echo Updating \.RC_files.*/d' ~/.bashrc > /tmp/.bashrc_clean
+\sed '/echo Updating \.RC_files/d' ~/.bashrc > /tmp/.bashrc_clean
 cat /tmp/.bashrc_clean > ~/.bashrc # delete any previous auto-update line(s)
-echo "echo Updating .RC_files...; (\\cd '$source_dir'; git pull) # keep RC_files up to date" >> ~/.bashrc
+echo "(echo Updating .RC_files...; \\cd '$source_dir'; git pull) >&2 # keep RC_files up to date" >> ~/.bashrc
 
 source ~/.bash_aliases # import bash aliases for immediate use
