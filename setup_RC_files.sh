@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Git alternative to the RC_file_installer.sh
-# * NEW INSTALL: git clone https://github.com/profPlum/RC_files.git ~/.RC_files; . ~/.RC_files/setup_RC_files.sh
+# * NEW INSTALL: git clone git@github.com:profPlum/RC_files.git ~/.RC_files; . ~/.RC_files/setup_RC_files.sh
 # * auto-updates once installed
 # * installs repo into ~/.RC_files
 # * can be used on mac to setup RC file links (but still requires manual mac.bashrc link)
