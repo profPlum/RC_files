@@ -12,6 +12,9 @@ map <C-E> <End>
 "map <S-Left> <Home>
 "map <S-Right> <End>
 
+" double escape clears search highlights
+nnoremap <Esc><Esc> :noh<CR> 
+
 "" enables mouse scrolling & selection
 " set mouse=a
 
