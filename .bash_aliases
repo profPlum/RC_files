@@ -171,6 +171,7 @@ git config --global rerere.autoupdate true
 [ $(which vim) ] && git config --global core.editor "vim"
 git config --global core.filemode false # prevents "file mode changes" from clogging git status
 git config --global commit.verbose true # shows hdif inside commit window
+git config --global core.pager "less -+F -+X -RS" # enables scrolling in git log, diff, etc.
 
 # Very useful! Clears all meta data & output bloat that accumulates in jupyter notebooks
 alias clean_jupyter='jupyter nbconvert --ClearOutputPreprocessor.enabled=True --ClearMetadataPreprocessor.enabled=True --to=notebook --inplace'
